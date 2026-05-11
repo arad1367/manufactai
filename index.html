@@ -1,0 +1,3693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ManufactAI — Agentic Metric Intelligence Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="data.js"></script>
+<style>
+/* ============================================================
+   RESET & ROOT VARIABLES
+   ============================================================ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg-0: #070b0f;
+  --bg-1: #0d1117;
+  --bg-2: #161b22;
+  --bg-3: #1c2128;
+  --teal: #00d4aa;
+  --teal-dim: rgba(0,212,170,0.12);
+  --teal-glow: 0 0 20px rgba(0,212,170,0.18);
+  --purple: #a78bfa;
+  --purple-dim: rgba(167,139,250,0.12);
+  --amber: #fbbf24;
+  --red: #f87171;
+  --green: #34d399;
+  --border: rgba(255,255,255,0.06);
+  --border-teal: rgba(0,212,170,0.25);
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --card-shadow: 0 0 0 1px rgba(0,212,170,0.04), 0 8px 32px rgba(0,0,0,0.4);
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
+html, body {
+  height: 100%;
+  background: var(--bg-0);
+  color: var(--text);
+  font-family: 'Space Grotesk', sans-serif;
+  overflow-x: hidden;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+a { color: var(--teal); text-decoration: none; }
+input, select, textarea, button { font-family: inherit; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bg-3); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* ============================================================
+   LAYOUT SCREENS (full-page overlays shown sequentially)
+   ============================================================ */
+.screen {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--bg-0);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.screen.hidden { display: none !important; }
+
+/* ============================================================
+   DATA SOURCE SELECTOR — SCREEN 1
+   ============================================================ */
+.ds-header {
+  text-align: center;
+  padding: 48px 20px 32px;
+}
+.ds-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.ds-logo-text { font-size: 1.4rem; font-weight: 700; color: var(--teal); letter-spacing: -0.02em; }
+.ds-main-title { font-size: 2rem; font-weight: 700; color: var(--text); margin-bottom: 10px; }
+.ds-subtitle { font-size: 0.95rem; color: var(--muted); max-width: 520px; margin: 0 auto 40px; }
+
+.upload-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 24px 48px;
+}
+.upload-card {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px 16px 24px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  position: relative;
+  user-select: none;
+}
+.upload-card:hover {
+  border-color: var(--teal);
+  box-shadow: var(--teal-glow);
+  transform: translateY(-3px);
+}
+.upload-card.drag-over {
+  border-color: var(--teal);
+  background: rgba(0,212,170,0.06);
+  box-shadow: 0 0 30px rgba(0,212,170,0.22);
+}
+.uc-icon { font-size: 2rem; margin-bottom: 14px; line-height: 1; }
+.uc-label { font-size: 0.95rem; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.uc-sub { font-size: 0.75rem; color: var(--muted); line-height: 1.4; }
+.uc-badge {
+  position: absolute;
+  top: 10px; right: 10px;
+  font-size: 0.65rem;
+  background: var(--teal-dim);
+  color: var(--teal);
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+.upload-card-demo { border-color: rgba(0,212,170,0.2); }
+
+.ds-loading {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 16px;
+}
+.ds-loading.visible { display: flex; }
+.ds-loading-spinner {
+  width: 40px; height: 40px;
+  border: 3px solid var(--bg-3);
+  border-top-color: var(--teal);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+.ds-loading-text { font-size: 0.95rem; color: var(--muted); }
+
+.ds-error {
+  display: none;
+  background: rgba(248,113,113,0.08);
+  border: 1px solid rgba(248,113,113,0.25);
+  border-radius: 12px;
+  padding: 14px 20px;
+  margin: 0 auto 24px;
+  max-width: 600px;
+  color: var(--red);
+  font-size: 0.875rem;
+  text-align: center;
+}
+.ds-error.visible { display: block; }
+
+/* ============================================================
+   DATA PROFILE — SCREEN 2
+   ============================================================ */
+.profile-wrap {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 40px 24px 60px;
+}
+.profile-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  margin-bottom: 24px;
+  background: none;
+  border: none;
+}
+.profile-back:hover { color: var(--text); }
+.profile-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 6px; }
+.profile-subtitle { font-size: 0.875rem; color: var(--muted); margin-bottom: 24px; }
+
+.file-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 0.8rem;
+  color: var(--text);
+  margin-bottom: 20px;
+}
+.file-badge-type {
+  background: var(--teal-dim);
+  color: var(--teal);
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.profile-stats {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+.p-stat {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 20px;
+}
+.p-stat-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+.p-stat-value { font-size: 1.3rem; font-weight: 700; color: var(--teal); }
+
+.detect-box {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+}
+.detect-box-title {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+.detect-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.detect-lbl { font-size: 0.85rem; color: var(--muted); min-width: 160px; }
+.detect-val {
+  background: var(--teal-dim);
+  color: var(--teal);
+  padding: 3px 12px;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.detect-val.none {
+  background: rgba(248,113,113,0.1);
+  color: var(--red);
+}
+.detect-val.purple {
+  background: var(--purple-dim);
+  color: var(--purple);
+}
+select.d-select {
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  appearance: auto;
+}
+select.d-select:focus { border-color: var(--teal); outline: none; }
+
+.schema-table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+.schema-table th {
+  background: var(--bg-3);
+  color: var(--teal);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 10px 12px;
+  text-align: left;
+}
+.schema-table td { padding: 8px 12px; font-size: 0.82rem; border-bottom: 1px solid var(--border); }
+.schema-table tr:nth-child(even) td { background: rgba(255,255,255,0.015); }
+.type-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.tp-metric { background: rgba(0,212,170,0.12); color: var(--teal); }
+.tp-dimension { background: var(--purple-dim); color: var(--purple); }
+.tp-text { background: rgba(251,191,36,0.12); color: var(--amber); }
+.tp-date { background: rgba(52,211,153,0.12); color: var(--green); }
+
+/* ============================================================
+   API KEY MODAL
+   ============================================================ */
+#api-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0,0,0,0.72);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#api-overlay.hidden { display: none; }
+.api-modal {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 44px 40px 36px;
+  max-width: 460px;
+  width: 92%;
+  text-align: center;
+  box-shadow: var(--card-shadow);
+}
+.api-modal-logo { display: flex; justify-content: center; margin-bottom: 24px; }
+.api-modal-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; }
+.api-modal-sub { font-size: 0.875rem; color: var(--muted); margin-bottom: 28px; line-height: 1.5; }
+.api-input {
+  width: 100%;
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+  letter-spacing: 0.02em;
+}
+.api-input:focus { border-color: var(--teal); outline: none; }
+.api-input.error { border-color: var(--red); }
+.api-privacy { font-size: 0.75rem; color: var(--muted); margin-bottom: 20px; }
+.api-status { font-size: 0.85rem; margin-bottom: 14px; min-height: 18px; }
+.api-status.error { color: var(--red); }
+.api-status.success { color: var(--green); }
+.api-demo-link {
+  margin-top: 12px;
+  font-size: 0.82rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+.api-demo-link:hover { color: var(--teal); }
+
+/* ============================================================
+   CHANGE DATASET MODAL
+   ============================================================ */
+#change-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(0,0,0,0.8);
+  backdrop-filter: blur(8px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+#change-modal.visible { display: flex; }
+.cm-inner {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 32px;
+  max-width: 860px;
+  width: 94%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.cm-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.cm-title { font-size: 1.2rem; font-weight: 700; }
+.cm-close {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 1.3rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 4px;
+}
+.cm-close:hover { color: var(--text); }
+.cm-warning {
+  font-size: 0.8rem;
+  color: var(--amber);
+  background: rgba(251,191,36,0.08);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 24px;
+}
+.cm-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+/* ============================================================
+   MAIN APPLICATION SHELL
+   ============================================================ */
+#app {
+  display: none;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+#app.visible { display: flex; }
+
+/* --- Header --- */
+#app-header {
+  height: 60px;
+  background: var(--bg-1);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 12px;
+  flex-shrink: 0;
+  z-index: 50;
+}
+.header-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.header-logo-name { font-size: 1.05rem; font-weight: 700; color: var(--teal); letter-spacing: -0.02em; }
+.header-logo-sub { font-size: 0.68rem; color: var(--muted); }
+.header-sep {
+  width: 1px;
+  height: 24px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+.header-spacer { flex: 1; }
+
+.data-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 0.78rem;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s;
+  max-width: 220px;
+}
+.data-badge:hover { border-color: var(--teal); }
+.db-icon { font-size: 0.85rem; }
+.db-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100px;
+}
+.db-rows { color: var(--muted); flex-shrink: 0; }
+
+.btn-change {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.btn-change:hover { border-color: var(--teal); color: var(--teal); }
+
+.agent-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--purple-dim);
+  border: 1px solid rgba(167,139,250,0.18);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 0.72rem;
+  color: var(--purple);
+  flex-shrink: 0;
+}
+.agent-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--purple);
+  animation: pulse-agent 2s ease-in-out infinite;
+}
+
+.api-status-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.api-status-pill:hover { border-color: var(--teal); }
+.api-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+}
+.api-dot.connected { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.api-dot.disconnected { background: var(--red); }
+
+/* --- Tab Navigation --- */
+#tab-nav {
+  height: 48px;
+  background: var(--bg-1);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 2px;
+  overflow-x: auto;
+  flex-shrink: 0;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+#tab-nav::-webkit-scrollbar { display: none; }
+
+.tab-btn {
+  height: 36px;
+  padding: 0 14px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 7px;
+  white-space: nowrap;
+  transition: all 0.15s;
+  position: relative;
+}
+.tab-btn:hover { background: var(--bg-2); color: var(--text); }
+.tab-btn.active { background: var(--bg-2); color: var(--teal); }
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -6px; left: 0; right: 0;
+  height: 2px;
+  background: var(--teal);
+  border-radius: 1px;
+}
+
+/* --- Main Content --- */
+#main-content {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--bg-0);
+}
+.tab-panel { padding: 24px; display: none; }
+.tab-panel.active { display: block; }
+
+/* ============================================================
+   SHARED COMPONENTS
+   ============================================================ */
+
+/* Cards */
+.card {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: var(--card-shadow);
+}
+.card-glow { box-shadow: var(--teal-glow); }
+.card-title {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 20px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-teal { background: var(--teal); color: #081a14; }
+.btn-teal:hover:not(:disabled) { background: #00b894; }
+.btn-outline { background: transparent; border: 1px solid var(--teal); color: var(--teal); }
+.btn-outline:hover:not(:disabled) { background: var(--teal-dim); }
+.btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+.btn-ghost:hover:not(:disabled) { background: var(--bg-3); color: var(--text); }
+.btn-sm { padding: 6px 14px; font-size: 0.78rem; }
+
+/* KPI Tiles */
+.kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
+.kpi-tile {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+  box-shadow: var(--card-shadow);
+  transition: box-shadow 0.2s;
+}
+.kpi-tile:hover { box-shadow: var(--teal-glow); }
+.kpi-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 8px; }
+.kpi-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--teal);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.kpi-sub { font-size: 0.72rem; color: var(--muted); margin-top: 5px; }
+
+/* Charts */
+.chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+.chart-card {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: var(--card-shadow);
+}
+.chart-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.chart-canvas-wrap { position: relative; height: 196px; }
+
+/* AI / Agent elements */
+.insight-card {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--teal);
+  border-radius: 12px;
+  padding: 18px 20px;
+  box-shadow: var(--card-shadow);
+  margin-bottom: 20px;
+}
+.insight-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.badge-purple {
+  background: var(--purple-dim);
+  color: var(--purple);
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+.badge-teal {
+  background: var(--teal-dim);
+  color: var(--teal);
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+.badge-green {
+  background: rgba(52,211,153,0.12);
+  color: var(--green);
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+.badge-amber {
+  background: rgba(251,191,36,0.12);
+  color: var(--amber);
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+.insight-text { font-size: 0.875rem; line-height: 1.65; color: var(--text); }
+
+/* Query chips */
+.chips-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.chip {
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.chip:hover { border-color: var(--teal); color: var(--teal); }
+
+/* Progress steps */
+.progress-steps { display: flex; flex-direction: column; gap: 6px; margin: 14px 0; }
+.p-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.83rem;
+  color: var(--muted);
+  padding: 6px 0;
+}
+.p-step.active { color: var(--text); }
+.p-step.done { color: var(--green); }
+.p-step-icon {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.68rem;
+  flex-shrink: 0;
+}
+.p-step-icon.spinning { animation: spin 0.9s linear infinite; border-top-color: transparent; }
+
+/* Response area */
+.response-card {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-top: 14px;
+}
+.response-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.response-text {
+  font-size: 0.875rem;
+  line-height: 1.72;
+  color: var(--text);
+  white-space: pre-wrap;
+  min-height: 32px;
+}
+.response-meta {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+/* Metric Conflict Cards */
+.conflict-cards-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 14px; }
+.conflict-cards-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 14px; }
+.conflict-card {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+.cc-team { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 8px; }
+.cc-formula {
+  background: var(--bg-1);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 0.72rem;
+  font-family: 'Courier New', monospace;
+  color: var(--amber);
+  margin-bottom: 12px;
+  word-break: break-all;
+}
+.cc-value { font-size: 1.5rem; font-weight: 700; color: var(--teal); }
+.cc-badge { display: inline-block; font-size: 0.68rem; padding: 2px 8px; border-radius: 4px; margin-top: 8px; }
+.badge-draft { background: rgba(251,191,36,0.12); color: var(--amber); }
+.badge-certified { background: rgba(52,211,153,0.12); color: var(--green); }
+
+/* Resolution card */
+.resolution-card {
+  background: var(--bg-2);
+  border: 1px solid rgba(52,211,153,0.25);
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-top: 14px;
+}
+.resolution-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.resolution-text {
+  font-size: 0.85rem;
+  line-height: 1.72;
+  color: var(--text);
+  white-space: pre-wrap;
+  min-height: 20px;
+}
+
+/* Registry */
+.registry-card {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  margin-top: 24px;
+}
+.registry-entry {
+  background: var(--bg-1);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+  animation: slide-in 0.3s ease-out;
+}
+.re-name { font-weight: 600; font-size: 0.875rem; color: var(--teal); }
+.re-formula { font-size: 0.72rem; font-family: monospace; color: var(--muted); margin-top: 4px; }
+.re-meta { font-size: 0.68rem; color: var(--purple); margin-top: 4px; }
+
+/* dbt Generator */
+.dbt-layout { display: grid; grid-template-columns: 280px 1fr; gap: 20px; min-height: 400px; }
+.dbt-left-label { font-size: 0.75rem; color: var(--muted); margin-bottom: 5px; display: block; }
+.dbt-select, .dbt-textarea {
+  width: 100%;
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 0.83rem;
+  margin-bottom: 14px;
+}
+.dbt-select:focus, .dbt-textarea:focus { border-color: var(--teal); outline: none; }
+.dbt-textarea { resize: vertical; min-height: 80px; }
+.skill-box {
+  background: var(--purple-dim);
+  border: 1px solid rgba(167,139,250,0.18);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 0.78rem;
+  color: var(--purple);
+  margin-top: 12px;
+  line-height: 1.5;
+}
+
+.dbt-right-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-3);
+  border-radius: 8px 8px 0 0;
+  padding: 9px 14px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.dbt-filename { color: var(--text); font-family: monospace; font-size: 0.78rem; }
+.code-wrap {
+  background: #1e2228;
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  overflow-x: auto;
+  min-height: 300px;
+}
+.code-wrap pre { margin: 0; }
+.code-wrap code { font-size: 0.78rem; line-height: 1.55; }
+
+/* Quality Tests */
+.tests-toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+.progress-bar-wrap { height: 4px; background: var(--bg-3); border-radius: 2px; margin-bottom: 12px; overflow: hidden; }
+.progress-bar-fill { height: 100%; background: var(--teal); transition: width 0.25s; border-radius: 2px; width: 0; }
+.tests-summary { font-size: 0.83rem; color: var(--muted); margin-bottom: 14px; }
+.tests-table { width: 100%; border-collapse: collapse; }
+.tests-table th {
+  background: var(--bg-3);
+  color: var(--teal);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 10px 12px;
+  text-align: left;
+}
+.tests-table td { padding: 9px 12px; font-size: 0.8rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.tests-table tr:nth-child(even) td { background: rgba(255,255,255,0.012); }
+.test-pass { color: var(--green); font-weight: 600; }
+.test-fail { color: var(--red); font-weight: 600; }
+.test-running { color: var(--amber); }
+.test-pending { color: var(--muted); }
+
+/* Pipeline */
+.pipe-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+.pipe-svg-wrap {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  overflow-x: auto;
+  margin-bottom: 14px;
+}
+.pipe-detail {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  display: none;
+}
+.pipe-detail.visible { display: block; }
+.pipe-detail-title { font-size: 1rem; font-weight: 600; margin-bottom: 6px; }
+.pipe-detail-sub { font-size: 0.8rem; color: var(--muted); margin-bottom: 14px; }
+.pipe-log-entry {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0;
+  font-size: 0.83rem;
+  border-bottom: 1px solid var(--border);
+}
+.ple-icon {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.ple-done { background: rgba(52,211,153,0.12); color: var(--green); }
+.ple-run { background: rgba(251,191,36,0.12); color: var(--amber); animation: spin 0.9s linear infinite; }
+
+/* Agent Log */
+.agent-stats-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.astat {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 16px;
+}
+.astat-label { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.astat-value { font-size: 1.1rem; font-weight: 700; color: var(--text); }
+.filter-chips-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.fchip {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.73rem;
+  cursor: pointer;
+}
+.fchip.active { background: var(--teal-dim); border-color: var(--teal); color: var(--teal); }
+.log-table { width: 100%; border-collapse: collapse; }
+.log-table th {
+  background: var(--bg-3);
+  color: var(--teal);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 10px 12px;
+  text-align: left;
+}
+.log-table td { padding: 8px 12px; font-size: 0.78rem; border-bottom: 1px solid var(--border); }
+.lt-agent { font-size: 0.7rem; background: var(--bg-3); border-radius: 4px; padding: 2px 7px; color: var(--muted); white-space: nowrap; }
+.lt-ok { color: var(--green); }
+.lt-warn { color: var(--amber); }
+.log-entry-new { animation: slide-in 0.3s ease-out; }
+.lt-expand-row { display: none; background: var(--bg-1); }
+.lt-expand-row.visible { display: table-row; }
+.lt-expand-cell { padding: 12px 14px; font-size: 0.78rem; color: var(--muted); line-height: 1.6; }
+
+/* Suggest tests */
+.suggest-section {
+  margin-top: 28px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+}
+.suggest-input-row { display: flex; gap: 10px; margin-top: 8px; }
+.suggest-input {
+  flex: 1;
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 9px 14px;
+  border-radius: 8px;
+  font-size: 0.83rem;
+}
+.suggest-input:focus { border-color: var(--teal); outline: none; }
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 20px;
+  font-size: 0.83rem;
+  color: var(--text);
+  z-index: 999;
+  animation: slide-in 0.25s ease-out;
+  box-shadow: var(--card-shadow);
+  max-width: 320px;
+}
+.toast.teal { border-color: var(--border-teal); }
+.toast.error { border-color: rgba(248,113,113,0.35); }
+
+/* Section helpers */
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.section-title { font-size: 1.05rem; font-weight: 600; }
+.section-sub { font-size: 0.8rem; color: var(--muted); }
+
+/* Textarea / input fields */
+.field-textarea {
+  width: 100%;
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  resize: vertical;
+  min-height: 76px;
+}
+.field-textarea:focus { border-color: var(--teal); outline: none; }
+
+/* Heatmap */
+.heatmap-wrap { overflow-x: auto; }
+.heatmap-grid { display: inline-grid; gap: 3px; }
+.heatmap-cell {
+  border-radius: 4px;
+  padding: 5px 8px;
+  text-align: center;
+  font-size: 0.7rem;
+  cursor: pointer;
+  min-width: 64px;
+  color: rgba(255,255,255,0.85);
+  transition: filter 0.2s;
+  font-weight: 500;
+}
+.heatmap-cell:hover { filter: brightness(1.25); }
+.heatmap-header {
+  text-align: center;
+  font-size: 0.68rem;
+  color: var(--muted);
+  padding: 2px 8px;
+}
+.heatmap-row-label {
+  font-size: 0.72rem;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  padding-right: 6px;
+}
+
+/* Particle burst */
+.burst-particle {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--teal);
+}
+
+/* Animations */
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin-slow { to { transform: rotate(360deg); } }
+@keyframes pulse-agent {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.75); }
+}
+@keyframes slide-in {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes count-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 900px) {
+  .upload-grid { grid-template-columns: repeat(3, 1fr); }
+  .cm-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 768px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .chart-grid { grid-template-columns: 1fr; }
+  .conflict-cards-3 { grid-template-columns: 1fr; }
+  .conflict-cards-2 { grid-template-columns: 1fr; }
+  .dbt-layout { grid-template-columns: 1fr; }
+  .upload-grid { grid-template-columns: repeat(2, 1fr); }
+  .cm-grid { grid-template-columns: repeat(2, 1fr); }
+  .agent-stats-row { gap: 8px; }
+}
+@media (max-width: 480px) {
+  .kpi-grid { grid-template-columns: 1fr 1fr; }
+  .upload-grid { grid-template-columns: 1fr 1fr; }
+  .tab-panel { padding: 14px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     SCREEN 1: DATA SOURCE SELECTOR
+     ============================================================ -->
+<div id="screen-datasource" class="screen">
+  <div class="ds-header">
+    <div class="ds-logo">
+      <svg class="hex-logo" width="40" height="40" viewBox="0 0 40 40" style="animation:spin-slow 20s linear infinite">
+        <polygon points="20,2 36,11 36,29 20,38 4,29 4,11" fill="none" stroke="#00d4aa" stroke-width="2"/>
+        <polygon points="20,8 30,14 30,26 20,32 10,26 10,14" fill="rgba(0,212,170,0.15)" stroke="#00d4aa" stroke-width="1"/>
+        <circle cx="20" cy="20" r="4" fill="#00d4aa"/>
+      </svg>
+      <span class="ds-logo-text">ManufactAI</span>
+    </div>
+    <div class="ds-main-title">Load Your Operations Data</div>
+    <div class="ds-subtitle">ManufactAI works with any manufacturing, operations, or business dataset</div>
+  </div>
+
+  <div id="ds-error" class="ds-error"></div>
+
+  <div id="ds-cards" class="upload-grid">
+    <!-- CSV -->
+    <div class="upload-card" id="card-csv" onclick="pickFile('csv')" ondragover="handleDragOver(event,'csv')" ondragleave="handleDragLeave(event,'csv')" ondrop="handleDrop(event,'csv')">
+      <div class="uc-icon">📋</div>
+      <div class="uc-label">CSV File</div>
+      <div class="uc-sub">Comma-separated values</div>
+    </div>
+    <!-- Excel -->
+    <div class="upload-card" id="card-excel" onclick="pickFile('excel')" ondragover="handleDragOver(event,'excel')" ondragleave="handleDragLeave(event,'excel')" ondrop="handleDrop(event,'excel')">
+      <div class="uc-icon">📊</div>
+      <div class="uc-label">Excel File</div>
+      <div class="uc-sub">.xlsx or .xls spreadsheet</div>
+    </div>
+    <!-- JSON -->
+    <div class="upload-card" id="card-json" onclick="pickFile('json')" ondragover="handleDragOver(event,'json')" ondragleave="handleDragLeave(event,'json')" ondrop="handleDrop(event,'json')">
+      <div class="uc-icon">{ }</div>
+      <div class="uc-label">JSON File</div>
+      <div class="uc-sub">Array of objects or nested</div>
+    </div>
+    <!-- SQLite -->
+    <div class="upload-card" id="card-sqlite" onclick="pickFile('sqlite')" ondragover="handleDragOver(event,'sqlite')" ondragleave="handleDragLeave(event,'sqlite')" ondrop="handleDrop(event,'sqlite')">
+      <div class="uc-icon">🗄️</div>
+      <div class="uc-label">SQLite Database</div>
+      <div class="uc-sub">.db or .sqlite file</div>
+    </div>
+    <!-- Demo -->
+    <div class="upload-card upload-card-demo" id="card-demo" onclick="loadDemoData()">
+      <span class="uc-badge">No upload</span>
+      <div class="uc-icon">⚗️</div>
+      <div class="uc-label">Demo Dataset</div>
+      <div class="uc-sub">Manufacturing defects · 3,240 rows</div>
+    </div>
+  </div>
+
+  <div id="ds-loading" class="ds-loading">
+    <div class="ds-loading-spinner"></div>
+    <div id="ds-loading-text" class="ds-loading-text">Loading…</div>
+  </div>
+
+  <!-- Hidden file inputs -->
+  <input type="file" id="fi-csv"    accept=".csv"                    style="display:none" onchange="handleFileInput(event,'csv')">
+  <input type="file" id="fi-excel"  accept=".xlsx,.xls"              style="display:none" onchange="handleFileInput(event,'excel')">
+  <input type="file" id="fi-json"   accept=".json"                   style="display:none" onchange="handleFileInput(event,'json')">
+  <input type="file" id="fi-sqlite" accept=".db,.sqlite,.sqlite3"    style="display:none" onchange="handleFileInput(event,'sqlite')">
+</div>
+
+<!-- ============================================================
+     SCREEN 2: DATA PROFILE
+     ============================================================ -->
+<div id="screen-profile" class="screen hidden">
+  <div class="profile-wrap">
+    <button class="profile-back" onclick="backToDataSource()">← Back</button>
+    <div class="profile-title">Data Profile</div>
+    <div class="profile-subtitle">Review detected columns and configure analysis settings</div>
+
+    <div id="profile-file-badge" class="file-badge">
+      <span class="file-badge-type" id="profile-type-label">CSV</span>
+      <span id="profile-filename">file.csv</span>
+    </div>
+
+    <div class="profile-stats">
+      <div class="p-stat">
+        <div class="p-stat-label">Rows</div>
+        <div class="p-stat-value" id="profile-rows">—</div>
+      </div>
+      <div class="p-stat">
+        <div class="p-stat-label">Columns</div>
+        <div class="p-stat-value" id="profile-cols">—</div>
+      </div>
+      <div class="p-stat">
+        <div class="p-stat-label">Metrics</div>
+        <div class="p-stat-value" id="profile-metrics-count">—</div>
+      </div>
+      <div class="p-stat">
+        <div class="p-stat-label">Dimensions</div>
+        <div class="p-stat-value" id="profile-dims-count">—</div>
+      </div>
+    </div>
+
+    <div class="detect-box">
+      <div class="detect-box-title">Auto-detected Column Roles</div>
+      <div class="detect-row">
+        <span class="detect-lbl">Primary metric column</span>
+        <span class="detect-val" id="detect-primary">—</span>
+        <select class="d-select" id="select-primary" onchange="overridePrimary(this.value)" style="display:none"></select>
+        <button class="btn btn-ghost btn-sm" onclick="togglePrimaryOverride()" id="btn-override-primary">Change</button>
+      </div>
+      <div class="detect-row">
+        <span class="detect-lbl">Grouping dimension 1</span>
+        <span class="detect-val purple" id="detect-dim1">—</span>
+        <select class="d-select" id="select-dim1" onchange="overrideDim(0,this.value)"></select>
+      </div>
+      <div class="detect-row">
+        <span class="detect-lbl">Grouping dimension 2</span>
+        <span class="detect-val purple" id="detect-dim2">—</span>
+        <select class="d-select" id="select-dim2" onchange="overrideDim(1,this.value)"></select>
+      </div>
+    </div>
+
+    <div class="card" style="overflow-x:auto">
+      <div class="card-title">Column Schema</div>
+      <table class="schema-table" id="schema-table">
+        <thead>
+          <tr>
+            <th>Column</th><th>Type</th><th>Min</th><th>Max</th><th>Sample values</th><th>Nulls</th>
+          </tr>
+        </thead>
+        <tbody id="schema-tbody"></tbody>
+      </table>
+    </div>
+
+    <div style="margin-top:24px;display:flex;gap:12px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="backToDataSource()">← Back</button>
+      <button class="btn btn-teal" onclick="confirmProfile()">Looks good — Continue →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     API KEY MODAL
+     ============================================================ -->
+<div id="api-overlay" class="hidden">
+  <div class="api-modal">
+    <div class="api-modal-logo">
+      <svg width="56" height="56" viewBox="0 0 56 56" style="animation:spin-slow 20s linear infinite">
+        <polygon points="28,3 51,16 51,40 28,53 5,40 5,16" fill="none" stroke="#00d4aa" stroke-width="2"/>
+        <polygon points="28,11 43,20 43,36 28,45 13,36 13,20" fill="rgba(0,212,170,0.1)" stroke="#00d4aa" stroke-width="1"/>
+        <circle cx="28" cy="28" r="6" fill="#00d4aa"/>
+      </svg>
+    </div>
+    <div class="api-modal-title">Connect AI Engine</div>
+    <div class="api-modal-sub">Power ManufactAI with real GPT-4o-mini intelligence for streaming analysis</div>
+    <input type="password" id="api-key-input" class="api-input" placeholder="sk-..." autocomplete="off">
+    <div class="api-privacy">🔒 Key stored in memory only. Never sent anywhere except api.openai.com</div>
+    <div id="api-status" class="api-status"></div>
+    <button class="btn btn-teal" style="width:100%" onclick="connectAPI()">Connect &amp; Initialize</button>
+    <div class="api-demo-link" onclick="enterDemoMode()">Use Demo Mode — no API key needed</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     CHANGE DATASET MODAL
+     ============================================================ -->
+<div id="change-modal">
+  <div class="cm-inner">
+    <div class="cm-head">
+      <div class="cm-title">Load New Dataset</div>
+      <button class="cm-close" onclick="closeChangeModal()">✕</button>
+    </div>
+    <div class="cm-warning">⚠ Loading new data will reset all AI conversations and test results</div>
+    <div class="cm-grid">
+      <div class="upload-card" onclick="pickFile('csv',true)" ondragover="handleDragOver(event,'csv',true)" ondrop="handleDrop(event,'csv',true)">
+        <div class="uc-icon">📋</div><div class="uc-label">CSV</div>
+      </div>
+      <div class="upload-card" onclick="pickFile('excel',true)" ondragover="handleDragOver(event,'excel',true)" ondrop="handleDrop(event,'excel',true)">
+        <div class="uc-icon">📊</div><div class="uc-label">Excel</div>
+      </div>
+      <div class="upload-card" onclick="pickFile('json',true)" ondragover="handleDragOver(event,'json',true)" ondrop="handleDrop(event,'json',true)">
+        <div class="uc-icon">{ }</div><div class="uc-label">JSON</div>
+      </div>
+      <div class="upload-card" onclick="pickFile('sqlite',true)" ondragover="handleDragOver(event,'sqlite',true)" ondrop="handleDrop(event,'sqlite',true)">
+        <div class="uc-icon">🗄️</div><div class="uc-label">SQLite</div>
+      </div>
+      <div class="upload-card upload-card-demo" onclick="loadDemoData(true)">
+        <div class="uc-icon">⚗️</div><div class="uc-label">Demo</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MAIN APPLICATION
+     ============================================================ -->
+<div id="app">
+
+  <!-- Header -->
+  <header id="app-header">
+    <div class="header-logo">
+      <svg width="32" height="32" viewBox="0 0 32 32" style="animation:spin-slow 20s linear infinite;flex-shrink:0">
+        <polygon points="16,2 29,9 29,23 16,30 3,23 3,9" fill="none" stroke="#00d4aa" stroke-width="1.5"/>
+        <polygon points="16,7 24,12 24,20 16,25 8,20 8,12" fill="rgba(0,212,170,0.12)" stroke="#00d4aa" stroke-width="1"/>
+        <circle cx="16" cy="16" r="3.5" fill="#00d4aa"/>
+      </svg>
+      <div>
+        <div class="header-logo-name">ManufactAI</div>
+        <div class="header-logo-sub">Agentic Analytics</div>
+      </div>
+    </div>
+    <div class="header-sep"></div>
+    <div class="data-badge" onclick="openChangeModal()" title="Click to change dataset">
+      <span class="db-icon" id="header-file-icon">⚗️</span>
+      <span class="db-name" id="header-file-name">demo-data</span>
+      <span class="db-rows" id="header-file-rows">3,240 rows</span>
+    </div>
+    <button class="btn-change" onclick="openChangeModal()">↺ Change Data</button>
+    <div class="header-spacer"></div>
+    <div class="agent-badge">
+      <div class="agent-dot"></div>
+      6 Agents Running
+    </div>
+    <div class="api-status-pill" onclick="document.getElementById('api-overlay').classList.remove('hidden')">
+      <div class="api-dot" id="api-dot-header"></div>
+      <span id="api-label-header">No API Key</span>
+    </div>
+  </header>
+
+  <!-- Tab Navigation -->
+  <nav id="tab-nav">
+    <button class="tab-btn active" data-tab="dashboard"  onclick="showTab('dashboard')">Dashboard</button>
+    <button class="tab-btn"        data-tab="query"      onclick="showTab('query')">AI Query</button>
+    <button class="tab-btn"        data-tab="resolver"   onclick="showTab('resolver')">Metric Resolver</button>
+    <button class="tab-btn"        data-tab="dbt"        onclick="showTab('dbt')">dbt Generator</button>
+    <button class="tab-btn"        data-tab="quality"    onclick="showTab('quality')">Quality Tests</button>
+    <button class="tab-btn"        data-tab="pipeline"   onclick="showTab('pipeline')">Pipeline</button>
+    <button class="tab-btn"        data-tab="agentlog"   onclick="showTab('agentlog')">Agent Log</button>
+  </nav>
+
+  <!-- Main Content — tab panels are populated by subsequent parts -->
+  <main id="main-content">
+
+    <!-- TAB 1: Dashboard -->
+    <div id="tab-dashboard" class="tab-panel active">
+      <div id="kpi-grid" class="kpi-grid">
+        <div class="kpi-tile"><div class="kpi-label">Total Records</div><div class="kpi-value" id="kpi-total">—</div><div class="kpi-sub" id="kpi-total-sub"></div></div>
+        <div class="kpi-tile"><div class="kpi-label" id="kpi-avg-label">Avg Metric</div><div class="kpi-value" id="kpi-avg">—</div><div class="kpi-sub" id="kpi-avg-sub"></div></div>
+        <div class="kpi-tile"><div class="kpi-label" id="kpi-worst-label">Worst Group</div><div class="kpi-value" id="kpi-worst">—</div><div class="kpi-sub" id="kpi-worst-sub"></div></div>
+        <div class="kpi-tile"><div class="kpi-label" id="kpi-down-label">Avg Downtime</div><div class="kpi-value" id="kpi-down">—</div><div class="kpi-sub" id="kpi-down-sub"></div></div>
+        <div class="kpi-tile"><div class="kpi-label">Anomalies</div><div class="kpi-value" id="kpi-anomalies">—</div><div class="kpi-sub" id="kpi-anomalies-sub">mean + 1.5σ</div></div>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-card"><div class="chart-label" id="chart1-label">Avg Metric by Group</div><div class="chart-canvas-wrap"><canvas id="chart-bar"></canvas></div></div>
+        <div class="chart-card"><div class="chart-label" id="chart2-label">Volume vs Metric</div><div class="chart-canvas-wrap"><canvas id="chart-scatter"></canvas></div></div>
+        <div class="chart-card"><div class="chart-label" id="chart3-label">Metric Over Time</div><div class="chart-canvas-wrap"><canvas id="chart-line"></canvas></div></div>
+        <div class="chart-card"><div class="chart-label">Metric Heatmap (Dim 1 × Dim 2)</div><div id="chart-heatmap" style="overflow:auto;max-height:210px"></div></div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-head">
+          <span style="font-size:1.1rem">⬡</span>
+          <span class="badge-purple">Agent Insight</span>
+          <span style="font-size:0.72rem;color:var(--muted)">computed from live data</span>
+        </div>
+        <div class="insight-text" id="insight-text">Loading analysis…</div>
+      </div>
+    </div>
+
+    <!-- TAB 2: AI Query -->
+    <div id="tab-query" class="tab-panel">
+      <div class="section-head">
+        <div class="section-title">AI Query Agent</div>
+        <div class="section-sub">GPT-4o-mini answers questions about your data with streaming</div>
+      </div>
+      <div id="query-chips" class="chips-row"></div>
+      <div class="query-area">
+        <textarea id="query-input" class="field-textarea" placeholder="Ask anything about your data…" rows="3"></textarea>
+      </div>
+      <button class="btn btn-teal" onclick="submitQuery()">⬡ Analyze with AI</button>
+      <div id="query-progress" class="progress-steps" style="display:none"></div>
+      <div id="query-response" style="display:none">
+        <div class="response-card">
+          <div class="response-head"><span style="font-size:1rem">⬡</span><span class="badge-purple">AI Analysis</span></div>
+          <div class="response-text" id="query-response-text"></div>
+          <div class="response-meta" id="query-response-meta"></div>
+        </div>
+        <div id="query-auto-chart" style="margin-top:14px"></div>
+      </div>
+    </div>
+
+    <!-- TAB 3: Metric Resolver -->
+    <div id="tab-resolver" class="tab-panel">
+      <div class="section-head">
+        <div class="section-title">Metric Definition Conflicts</div>
+        <div class="section-sub">Surface and resolve conflicting KPI calculations across teams</div>
+      </div>
+      <!-- Conflict 1 -->
+      <div style="margin-bottom:32px">
+        <div style="font-size:1rem;font-weight:600;margin-bottom:4px" id="conflict1-title">Defect Rate Conflict</div>
+        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:14px">3 teams compute the same KPI differently — all numbers computed from your data</div>
+        <div id="conflict1-cards" class="conflict-cards-3"></div>
+        <div style="text-align:center;margin:14px 0">
+          <button class="btn btn-teal" onclick="resolveConflict(1)">⬡ Resolve with AI</button>
+        </div>
+        <div id="conflict1-resolution" style="display:none">
+          <div class="resolution-card">
+            <div class="resolution-head"><span class="badge-green">✓ Canonical Resolution</span></div>
+            <div class="resolution-text" id="resolution1-text"></div>
+            <div style="margin-top:14px;display:flex;gap:8px">
+              <button class="btn btn-outline btn-sm" onclick="acceptCanonical(1)">✓ Accept as Canonical</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Conflict 2 -->
+      <div style="margin-bottom:24px">
+        <div style="font-size:1rem;font-weight:600;margin-bottom:4px" id="conflict2-title">Downtime % Conflict</div>
+        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:14px">2 teams use different averaging methods</div>
+        <div id="conflict2-cards" class="conflict-cards-2"></div>
+        <div style="text-align:center;margin:14px 0">
+          <button class="btn btn-outline" onclick="resolveConflict(2)">⬡ Resolve with AI</button>
+        </div>
+        <div id="conflict2-resolution" style="display:none">
+          <div class="resolution-card">
+            <div class="resolution-head"><span class="badge-green">✓ Canonical Resolution</span></div>
+            <div class="resolution-text" id="resolution2-text"></div>
+            <div style="margin-top:14px">
+              <button class="btn btn-outline btn-sm" onclick="acceptCanonical(2)">✓ Accept as Canonical</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Registry -->
+      <div class="registry-card">
+        <div class="card-title">Metric Registry — Certified Definitions</div>
+        <div id="registry-entries"><div style="font-size:0.82rem;color:var(--muted)">No canonical definitions accepted yet.</div></div>
+      </div>
+    </div>
+
+    <!-- TAB 4: dbt Generator -->
+    <div id="tab-dbt" class="tab-panel">
+      <div class="section-head">
+        <div class="section-title">dbt Model Generator</div>
+        <div class="section-sub">AI-powered production-ready analytics engineering artifacts</div>
+      </div>
+      <div class="dbt-layout">
+        <div class="dbt-left">
+          <label class="dbt-left-label">Model Type</label>
+          <select id="dbt-type" class="dbt-select">
+            <option value="staging">Staging</option>
+            <option value="intermediate">Intermediate</option>
+            <option value="mart" selected>Mart</option>
+            <option value="metric">Metric</option>
+          </select>
+          <label class="dbt-left-label">What should this model compute?</label>
+          <textarea id="dbt-desc" class="dbt-textarea" placeholder="Describe the model…"></textarea>
+          <div id="dbt-chips" class="chips-row" style="flex-wrap:wrap;gap:6px;margin-bottom:14px"></div>
+          <button class="btn btn-teal" onclick="generateDbt()" style="width:100%">⬡ Generate dbt Model</button>
+          <div class="skill-box" style="margin-top:14px">
+            ⬡ Skill: <strong>manufacturing-analytics</strong><br>
+            <span style="font-size:0.72rem;opacity:0.8">Loaded from .claude/skills/manufacturing-analytics/SKILL.md</span><br>
+            <span style="font-size:0.72rem;opacity:0.7">Canonical metric definitions · dbt templates · data quality tests</span>
+          </div>
+        </div>
+        <div class="dbt-right">
+          <div class="dbt-right-header">
+            <span class="dbt-filename" id="dbt-filename">mart_model.sql</span>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-ghost btn-sm" onclick="copyDbtCode()">Copy</button>
+              <button class="btn btn-ghost btn-sm" onclick="addToPipeline()">Add to Pipeline</button>
+            </div>
+          </div>
+          <div class="code-wrap">
+            <pre><code id="dbt-code" class="language-sql">-- Click "Generate dbt Model" to produce a production-ready dbt SQL model
+-- using the manufacturing-analytics skill and your real column names.</code></pre>
+          </div>
+          <div style="margin-top:12px;display:none" id="dbt-schema-wrap">
+            <div style="font-size:0.78rem;color:var(--muted);margin-bottom:6px">schema.yml — Data quality tests</div>
+            <div class="code-wrap">
+              <pre><code id="dbt-schema-code" class="language-yaml"></code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: Quality Tests -->
+    <div id="tab-quality" class="tab-panel">
+      <div class="section-head">
+        <div class="section-title">Data Quality Tests</div>
+        <div class="section-sub" id="quality-sub">Running against your live dataset</div>
+      </div>
+      <div class="tests-toolbar">
+        <button class="btn btn-teal" id="btn-run-tests" onclick="runAllTests()">▶ Run All Tests</button>
+        <button class="btn btn-ghost btn-sm" onclick="exportTestReport()">↓ Export JSON Report</button>
+      </div>
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" id="tests-progress-fill"></div></div>
+      <div class="tests-summary" id="tests-summary">Click "Run All Tests" to validate your dataset</div>
+      <div style="overflow-x:auto">
+        <table class="tests-table">
+          <thead><tr><th>#</th><th>Test</th><th>Layer</th><th>Column</th><th>Assertion</th><th>Rows</th><th>Result</th></tr></thead>
+          <tbody id="tests-tbody"></tbody>
+        </table>
+      </div>
+      <div class="suggest-section">
+        <div style="font-size:0.78rem;font-weight:600;color:var(--text)">AI Suggest Additional Tests</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:4px">Enter a column name to get 3 AI-suggested data quality tests</div>
+        <div class="suggest-input-row">
+          <input type="text" id="suggest-col-input" class="suggest-input" placeholder="e.g. DefectRate">
+          <button class="btn btn-outline btn-sm" onclick="suggestTests()">⬡ Suggest</button>
+        </div>
+        <div id="suggest-output" style="margin-top:12px"></div>
+      </div>
+    </div>
+
+    <!-- TAB 6: Pipeline -->
+    <div id="tab-pipeline" class="tab-panel">
+      <div class="pipe-toolbar">
+        <div>
+          <div class="section-title">Pipeline Inspector</div>
+          <div class="section-sub">Data lineage DAG — click nodes to inspect SQL</div>
+        </div>
+        <button class="btn btn-teal" onclick="runPipeline()">▶ Run Pipeline</button>
+      </div>
+      <div class="pipe-svg-wrap">
+        <svg id="pipeline-svg" viewBox="0 0 960 170" width="100%" style="min-width:700px;height:auto"></svg>
+      </div>
+      <div id="pipe-log" style="margin-bottom:14px"></div>
+      <div id="pipe-detail" class="pipe-detail">
+        <div class="pipe-detail-title" id="pipe-detail-title">Node</div>
+        <div class="pipe-detail-sub" id="pipe-detail-sub"></div>
+        <div class="code-wrap" style="margin-bottom:12px">
+          <pre><code id="pipe-detail-code" class="language-sql"></code></pre>
+        </div>
+        <div id="pipe-detail-tests"></div>
+      </div>
+    </div>
+
+    <!-- TAB 7: Agent Log -->
+    <div id="tab-agentlog" class="tab-panel">
+      <div class="section-head">
+        <div class="section-title">Agent Orchestration Log</div>
+        <div class="section-sub">Real-time view of all agent actions, API calls, and data operations</div>
+      </div>
+      <div class="agent-stats-row">
+        <div class="astat"><div class="astat-label">Total Actions</div><div class="astat-value" id="alog-total">0</div></div>
+        <div class="astat"><div class="astat-label">API Calls</div><div class="astat-value" id="alog-api">0</div></div>
+        <div class="astat"><div class="astat-label">Tokens Used</div><div class="astat-value" id="alog-tokens">0</div></div>
+        <div class="astat"><div class="astat-label">Avg Latency</div><div class="astat-value" id="alog-latency">—</div></div>
+        <div class="astat"><div class="astat-label">Skills Loaded</div><div class="astat-value" style="color:var(--purple)">1</div></div>
+      </div>
+      <div class="filter-chips-row" id="log-filters">
+        <button class="fchip active" data-filter="all" onclick="filterLog('all')">All</button>
+        <button class="fchip" data-filter="openai" onclick="filterLog('openai')">OpenAI</button>
+        <button class="fchip" data-filter="data" onclick="filterLog('data')">Data Ops</button>
+        <button class="fchip" data-filter="quality" onclick="filterLog('quality')">Quality</button>
+        <button class="fchip" data-filter="skills" onclick="filterLog('skills')">Skills</button>
+        <button class="fchip" data-filter="pipeline" onclick="filterLog('pipeline')">Pipeline</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="log-table">
+          <thead><tr><th>Time</th><th>Agent</th><th>Tool</th><th>Action</th><th>Status</th><th>Tokens/ms</th></tr></thead>
+          <tbody id="log-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div><!-- /#app -->
+
+<!-- ============================================================
+     JAVASCRIPT — DATA UPLOAD, SCHEMA DETECTION, ONBOARDING
+     ============================================================ -->
+<script>
+'use strict';
+
+/* ================================================================
+   GLOBAL STATE
+   ================================================================ */
+window.MFG_DATA        = window.MFG_DATA || [];   // populated from data.js or upload
+window.SCHEMA          = [];                        // [{name,type,min,max,uniqueValues,nullCount}]
+window.PRIMARY_METRIC_COL = '';
+window.DIMENSION_COLS  = [];                        // up to 2 dimension column names
+window.METRICS         = {};
+window.AGENT_LOG       = [];
+window.METRIC_REGISTRY = {};
+
+let apiKey    = '';
+let demoMode  = false;
+let activeTab = 'dashboard';
+let uploadedFileName = 'demo-data';
+let uploadedFileType = 'demo';
+let fromChangeModal  = false;
+let charts   = {};
+let logFilter = 'all';
+let monitorInterval = null;
+let testResults = [];
+let selectedPipelineNode = null;
+
+/* ================================================================
+   UTILITY HELPERS
+   ================================================================ */
+function fmt(n, dec = 2) {
+  if (n === undefined || n === null || isNaN(n)) return '—';
+  return Number(n).toFixed(dec);
+}
+function fmtN(n) {
+  if (n === undefined || n === null || isNaN(n)) return '—';
+  return Number(n).toLocaleString();
+}
+function nowTs() { return new Date().toLocaleTimeString('en-US', { hour12: false }); }
+function showToast(msg, type = 'teal', ms = 3000) {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), ms);
+}
+
+/* ================================================================
+   FILE PICKING — triggers hidden input
+   ================================================================ */
+function pickFile(type, fromChange = false) {
+  fromChangeModal = fromChange;
+  const idMap = { csv:'fi-csv', excel:'fi-excel', json:'fi-json', sqlite:'fi-sqlite' };
+  const inp = document.getElementById(idMap[type]);
+  if (inp) inp.click();
+}
+
+/* ================================================================
+   DRAG & DROP HANDLERS
+   ================================================================ */
+function handleDragOver(e, type, fromChange = false) {
+  e.preventDefault();
+  document.getElementById('card-' + type)?.classList.add('drag-over');
+}
+function handleDragLeave(e, type) {
+  document.getElementById('card-' + type)?.classList.remove('drag-over');
+}
+async function handleDrop(e, type, fromChange = false) {
+  e.preventDefault();
+  fromChangeModal = fromChange;
+  document.getElementById('card-' + type)?.classList.remove('drag-over');
+  const file = e.dataTransfer?.files?.[0];
+  if (!file) return;
+  await processFile(file, type);
+}
+async function handleFileInput(e, type) {
+  const file = e.target.files?.[0];
+  e.target.value = '';
+  if (!file) return;
+  await processFile(file, type);
+}
+
+/* ================================================================
+   DEMO DATA LOADER
+   ================================================================ */
+function loadDemoData(fromChange = false) {
+  fromChangeModal = fromChange;
+  if (fromChange) closeChangeModal();
+
+  const raw = window.MFG_DATA;
+  if (!raw || raw.length === 0) {
+    showDsError('Demo data not found. Make sure data.js is loaded.');
+    return;
+  }
+  uploadedFileName = 'manufacturing_defect_dataset';
+  uploadedFileType = 'demo';
+  processData(raw, 'demo', 'manufacturing_defect_dataset.csv');
+}
+
+/* ================================================================
+   MAIN FILE PROCESSOR — routes to parser by type
+   ================================================================ */
+async function processFile(file, type) {
+  if (file.size > 52_428_800) {        // 50 MB limit
+    showDsError(`File is ${(file.size/1048576).toFixed(1)} MB. For best performance, use files under 50 MB.`);
+    return;
+  }
+  if (fromChangeModal) closeChangeModal();
+  showDsLoading(`Parsing ${file.name}…`);
+  hideDsError();
+
+  try {
+    let data;
+    if (type === 'csv')    data = await parseCSV(file);
+    else if (type === 'excel') data = await parseExcel(file);
+    else if (type === 'json')  data = await parseJSON(file);
+    else if (type === 'sqlite')data = await parseSQLite(file);
+
+    if (!data || data.length === 0) {
+      hideDsLoading();
+      showDsError('File appears empty or no data rows detected.');
+      return;
+    }
+    uploadedFileName = file.name.replace(/\.[^.]+$/, '');
+    uploadedFileType = type;
+    processData(data, type, file.name);
+  } catch (err) {
+    hideDsLoading();
+    showDsError(err.message || 'Failed to parse file. Please check the format and retry.');
+  }
+}
+
+/* ================================================================
+   PARSERS
+   ================================================================ */
+
+// ---- CSV ----
+async function parseCSV(file) {
+  const text = await file.text();
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (lines.length < 2) throw new Error('CSV has fewer than 2 lines — check the file.');
+
+  const parseRow = (line) => {
+    const fields = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQ && line[i + 1] === '"') { cur += '"'; i++; }
+        else inQ = !inQ;
+      } else if (ch === ',' && !inQ) { fields.push(cur); cur = ''; }
+      else cur += ch;
+    }
+    fields.push(cur);
+    return fields.map(f => f.trim());
+  };
+
+  const headers = parseRow(lines[0]);
+  return lines.slice(1).map(line => {
+    const vals = parseRow(line);
+    const obj = {};
+    headers.forEach((h, i) => {
+      const v = vals[i] ?? '';
+      const n = parseFloat(v);
+      obj[h] = (v !== '' && !isNaN(n)) ? n : v;
+    });
+    return obj;
+  });
+}
+
+// ---- Excel ----
+async function parseExcel(file) {
+  if (!window.XLSX) throw new Error('SheetJS not loaded. Check network connection.');
+  const ab = await file.arrayBuffer();
+  const wb = XLSX.read(ab, { type: 'array' });
+  if (!wb.SheetNames.length) throw new Error('Excel with no data rows detected.');
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const data = XLSX.utils.sheet_to_json(ws, { defval: '' });
+  if (!data.length) throw new Error('Excel with no data rows detected.');
+  // coerce numerics
+  return data.map(row => {
+    const obj = {};
+    for (const k in row) {
+      const v = row[k];
+      const n = parseFloat(v);
+      obj[k] = (v !== '' && !isNaN(n)) ? n : v;
+    }
+    return obj;
+  });
+}
+
+// ---- JSON ----
+async function parseJSON(file) {
+  const text = await file.text();
+  let parsed;
+  try { parsed = JSON.parse(text); }
+  catch (_) { throw new Error('Invalid JSON format. Expected an array of objects like [{…}, {…}]'); }
+  if (Array.isArray(parsed)) return parsed;
+  if (parsed.data && Array.isArray(parsed.data)) return parsed.data;
+  const arrProp = Object.values(parsed).find(v => Array.isArray(v));
+  if (arrProp) return arrProp;
+  throw new Error('No array found in JSON structure. Expected [{…}, {…}] or { data: [{…}] }');
+}
+
+// ---- SQLite ----
+async function parseSQLite(file) {
+  showDsLoading('Loading WebAssembly SQL engine… (first time ~2 MB)');
+  if (!window.initSqlJs) {
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js');
+  }
+  const SQL = await initSqlJs({
+    locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${f}`
+  });
+  const ab = await file.arrayBuffer();
+  const db = new SQL.Database(new Uint8Array(ab));
+
+  const tables = db.exec("SELECT name FROM sqlite_master WHERE type='table'");
+  if (!tables.length || !tables[0].values.length) throw new Error('Database file found but contains no tables.');
+  const tableNames = tables[0].values.map(r => r[0]);
+  const tableName  = tableNames[0];   // pick first table
+
+  const res = db.exec(`SELECT * FROM "${tableName}" LIMIT 5000`);
+  if (!res.length) throw new Error('Table appears empty.');
+  const cols = res[0].columns;
+  return res[0].values.map(row => {
+    const obj = {};
+    cols.forEach((c, i) => { obj[c] = row[i]; });
+    return obj;
+  });
+}
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = () => reject(new Error('Failed to load: ' + src));
+    document.head.appendChild(s);
+  });
+}
+
+/* ================================================================
+   SCHEMA ANALYSIS
+   ================================================================ */
+function analyzeSchema(data) {
+  if (!data.length) return [];
+  const keys = Object.keys(data[0]);
+
+  return keys.map(col => {
+    const allVals = data.map(r => r[col]);
+    const nonNull = allVals.filter(v => v !== null && v !== undefined && v !== '');
+    const nullCount = allVals.length - nonNull.length;
+
+    // Numeric?
+    const nums = nonNull.map(v => parseFloat(v)).filter(v => !isNaN(v));
+    if (nums.length === nonNull.length && nonNull.length > 0) {
+      return {
+        name: col, type: 'metric',
+        min: Math.min(...nums), max: Math.max(...nums),
+        uniqueValues: [...new Set(nums)].slice(0, 8).map(n => +n.toFixed(4)),
+        nullCount
+      };
+    }
+
+    // Date?
+    const strs = nonNull.map(String);
+    const dateCount = strs.filter(v => !isNaN(Date.parse(v)) && /\d{4}/.test(v)).length;
+    if (dateCount > nonNull.length * 0.8 && nonNull.length > 0) {
+      return { name: col, type: 'date', min: null, max: null, uniqueValues: strs.slice(0, 4), nullCount };
+    }
+
+    // Categorical vs free text
+    const unique = [...new Set(strs)];
+    if (unique.length <= 30) {
+      return { name: col, type: 'dimension', min: null, max: null, uniqueValues: unique, nullCount };
+    }
+    return { name: col, type: 'text', min: null, max: null, uniqueValues: unique.slice(0, 5), nullCount };
+  });
+}
+
+function detectPrimaryMetric(schema) {
+  const kws = ['defect','error','fault','fail','reject','quality','issue','incident','anomaly','bad','rate','score','loss'];
+  for (const kw of kws) {
+    const col = schema.find(c => c.name.toLowerCase().includes(kw) && c.type === 'metric');
+    if (col) return col.name;
+  }
+  const first = schema.find(c => c.type === 'metric');
+  return first ? first.name : (schema[0]?.name || '');
+}
+
+function detectDimensions(schema) {
+  const kws = ['machine','line','shift','station','operator','department','product','type','category','id','group','class','status'];
+  const dims = [];
+  for (const kw of kws) {
+    const col = schema.find(c => c.name.toLowerCase().includes(kw) && c.type === 'dimension' && !dims.includes(c.name));
+    if (col) { dims.push(col.name); if (dims.length >= 2) break; }
+  }
+  if (dims.length < 2) {
+    schema.filter(c => c.type === 'dimension' && !dims.includes(c.name)).slice(0, 2 - dims.length).forEach(c => dims.push(c.name));
+  }
+  return dims;
+}
+
+/* ================================================================
+   PROCESS DATA → show profile screen
+   ================================================================ */
+function processData(data, fileType, fileName) {
+  window.MFG_DATA = data;
+  window.SCHEMA   = analyzeSchema(data);
+  window.PRIMARY_METRIC_COL = detectPrimaryMetric(window.SCHEMA);
+  window.DIMENSION_COLS     = detectDimensions(window.SCHEMA);
+
+  hideDsLoading();
+  showProfileScreen(fileType, fileName);
+}
+
+/* ================================================================
+   PROFILE SCREEN — render detected schema
+   ================================================================ */
+function showProfileScreen(fileType, fileName) {
+  document.getElementById('screen-datasource').classList.add('hidden');
+  document.getElementById('screen-profile').classList.remove('hidden');
+
+  const schema = window.SCHEMA;
+  const data   = window.MFG_DATA;
+
+  // File badge
+  document.getElementById('profile-type-label').textContent = fileType.toUpperCase();
+  document.getElementById('profile-filename').textContent    = fileName;
+
+  // Stats
+  const metricCols = schema.filter(c => c.type === 'metric').length;
+  const dimCols    = schema.filter(c => c.type === 'dimension').length;
+  document.getElementById('profile-rows').textContent          = fmtN(data.length);
+  document.getElementById('profile-cols').textContent          = schema.length;
+  document.getElementById('profile-metrics-count').textContent = metricCols;
+  document.getElementById('profile-dims-count').textContent    = dimCols;
+
+  // Auto-detected roles
+  const pm = window.PRIMARY_METRIC_COL;
+  const d1 = window.DIMENSION_COLS[0] || '';
+  const d2 = window.DIMENSION_COLS[1] || '';
+
+  const elPrimary = document.getElementById('detect-primary');
+  elPrimary.textContent = pm || 'None detected';
+  elPrimary.className   = 'detect-val' + (pm ? '' : ' none');
+
+  const elD1 = document.getElementById('detect-dim1');
+  elD1.textContent = d1 || 'None';
+  elD1.className   = 'detect-val purple' + (d1 ? '' : ' none');
+
+  const elD2 = document.getElementById('detect-dim2');
+  elD2.textContent = d2 || 'None';
+  elD2.className   = 'detect-val purple' + (d2 ? '' : ' none');
+
+  // Populate override selects
+  const metricOpts = schema.filter(c => c.type === 'metric').map(c => `<option value="${c.name}"${c.name===pm?' selected':''}>${c.name}</option>`).join('');
+  document.getElementById('select-primary').innerHTML = metricOpts;
+
+  const dimOpts = schema.map(c => `<option value="${c.name}"${c.name===d1?' selected':''}>${c.name}</option>`).join('');
+  document.getElementById('select-dim1').innerHTML  = '<option value="">— none —</option>' + dimOpts;
+  document.getElementById('select-dim2').innerHTML  = '<option value="">— none —</option>' +
+    schema.map(c => `<option value="${c.name}"${c.name===d2?' selected':''}>${c.name}</option>`).join('');
+
+  // Schema table
+  const tbody = document.getElementById('schema-tbody');
+  tbody.innerHTML = schema.map(col => {
+    const typeClass = { metric:'tp-metric', dimension:'tp-dimension', text:'tp-text', date:'tp-date' }[col.type] || 'tp-text';
+    const minStr = col.min !== null ? fmt(col.min) : '—';
+    const maxStr = col.max !== null ? fmt(col.max) : '—';
+    const sample = col.uniqueValues.slice(0, 4).join(', ');
+    return `<tr>
+      <td><strong>${col.name}</strong></td>
+      <td><span class="type-pill ${typeClass}">${col.type}</span></td>
+      <td>${minStr}</td><td>${maxStr}</td>
+      <td style="color:var(--muted);font-size:0.75rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sample}</td>
+      <td>${col.nullCount}</td>
+    </tr>`;
+  }).join('');
+}
+
+function togglePrimaryOverride() {
+  const sel = document.getElementById('select-primary');
+  const val = document.getElementById('detect-primary');
+  const btn = document.getElementById('btn-override-primary');
+  const hidden = sel.style.display === 'none';
+  sel.style.display = hidden ? 'inline-block' : 'none';
+  val.style.display = hidden ? 'none' : 'inline-block';
+  btn.textContent   = hidden ? 'Done' : 'Change';
+}
+function overridePrimary(col) {
+  window.PRIMARY_METRIC_COL = col;
+  document.getElementById('detect-primary').textContent = col;
+}
+function overrideDim(idx, col) {
+  window.DIMENSION_COLS[idx] = col;
+  const el = document.getElementById('detect-dim' + (idx + 1));
+  el.textContent = col || 'None';
+  el.className   = 'detect-val purple' + (col ? '' : ' none');
+}
+function backToDataSource() {
+  document.getElementById('screen-profile').classList.add('hidden');
+  document.getElementById('screen-datasource').classList.remove('hidden');
+}
+
+/* ================================================================
+   CONFIRM PROFILE → show API key modal
+   ================================================================ */
+function confirmProfile() {
+  document.getElementById('screen-profile').classList.add('hidden');
+  document.getElementById('api-overlay').classList.remove('hidden');
+}
+
+/* ================================================================
+   LOADING / ERROR UI HELPERS
+   ================================================================ */
+function showDsLoading(msg) {
+  document.getElementById('ds-cards').style.display    = 'none';
+  document.getElementById('ds-loading').classList.add('visible');
+  document.getElementById('ds-loading-text').textContent = msg;
+}
+function hideDsLoading() {
+  document.getElementById('ds-cards').style.display    = 'grid';
+  document.getElementById('ds-loading').classList.remove('visible');
+}
+function showDsError(msg) {
+  const el = document.getElementById('ds-error');
+  el.textContent = msg;
+  el.classList.add('visible');
+}
+function hideDsError() {
+  document.getElementById('ds-error').classList.remove('visible');
+}
+
+/* ================================================================
+   CHANGE DATASET MODAL
+   ================================================================ */
+function openChangeModal() {
+  document.getElementById('change-modal').classList.add('visible');
+}
+function closeChangeModal() {
+  document.getElementById('change-modal').classList.remove('visible');
+}
+
+/* ================================================================
+   API KEY MODAL
+   ================================================================ */
+async function connectAPI() {
+  const key = document.getElementById('api-key-input').value.trim();
+  if (!key.startsWith('sk-')) {
+    setApiStatus('Key must start with sk-', 'error');
+    document.getElementById('api-key-input').classList.add('error');
+    return;
+  }
+  setApiStatus('Validating key…');
+  try {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+      body: JSON.stringify({ model:'gpt-4o-mini', messages:[{role:'user',content:'ping'}], max_tokens:3 })
+    });
+    if (!res.ok) throw new Error('Invalid key');
+    apiKey   = key;
+    demoMode = false;
+    setApiStatus('✓ Connected to GPT-4o-mini', 'success');
+    setTimeout(launchApp, 800);
+  } catch (_) {
+    setApiStatus('Invalid key — check and retry', 'error');
+    document.getElementById('api-key-input').classList.add('error');
+  }
+}
+function enterDemoMode() {
+  demoMode = true;
+  apiKey   = '';
+  document.getElementById('api-overlay').classList.add('hidden');
+  launchApp();
+}
+function setApiStatus(msg, cls = '') {
+  const el = document.getElementById('api-status');
+  el.textContent = msg;
+  el.className   = 'api-status' + (cls ? ' ' + cls : '');
+}
+
+/* ================================================================
+   LAUNCH APP — after key confirmed or demo mode
+   ================================================================ */
+function launchApp() {
+  document.getElementById('api-overlay').classList.add('hidden');
+  document.getElementById('app').classList.add('visible');
+  updateHeaderData();
+  updateApiPill();
+  computeMetrics();
+  seedAgentLog();
+  initDashboard();
+  initResolver();
+  initDbtChips();
+  initQualityTests();
+  initPipeline();
+  startMonitorAgent();
+}
+
+function updateHeaderData() {
+  const icons = { csv:'📋', excel:'📊', json:'{ }', sqlite:'🗄️', demo:'⚗️' };
+  document.getElementById('header-file-icon').textContent = icons[uploadedFileType] || '📄';
+  const name = uploadedFileName.length > 18 ? uploadedFileName.slice(0, 18) + '…' : uploadedFileName;
+  document.getElementById('header-file-name').textContent = name;
+  document.getElementById('header-file-rows').textContent = fmtN(window.MFG_DATA.length) + ' rows';
+}
+function updateApiPill() {
+  const dot   = document.getElementById('api-dot-header');
+  const label = document.getElementById('api-label-header');
+  if (demoMode) {
+    dot.className   = 'api-dot disconnected';
+    label.textContent = 'Demo Mode';
+  } else {
+    dot.className   = 'api-dot connected';
+    label.textContent = 'GPT-4o-mini ✓';
+  }
+}
+
+/* ================================================================
+   TAB NAVIGATION
+   ================================================================ */
+function showTab(id) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id)?.classList.add('active');
+  document.querySelector(`.tab-btn[data-tab="${id}"]`)?.classList.add('active');
+  activeTab = id;
+}
+
+/* ================================================================
+   METRICS COMPUTATION
+   ================================================================ */
+function computeMetrics() {
+  const t0   = performance.now();
+  const data = window.MFG_DATA;
+  const n    = data.length;
+  const pm   = window.PRIMARY_METRIC_COL;
+  const d0   = window.DIMENSION_COLS[0] || '';
+  const d1   = window.DIMENSION_COLS[1] || '';
+
+  if (!pm || !n) { window.METRICS = { totalRecords: n }; return; }
+
+  const vals = data.map(r => parseFloat(r[pm])).filter(v => !isNaN(v));
+  const avg  = vals.reduce((a, b) => a + b, 0) / vals.length;
+  const vari = vals.reduce((a, b) => a + (b - avg) ** 2, 0) / vals.length;
+  const std  = Math.sqrt(vari);
+  const thr  = avg + 1.5 * std;
+  const anomalies = data.filter(r => parseFloat(r[pm]) > thr);
+
+  // Per dim0 averages
+  const dim0Avgs = {};
+  const dim0Map  = {};
+  if (d0) {
+    data.forEach(r => {
+      const k = String(r[d0] ?? '');
+      if (!dim0Map[k]) dim0Map[k] = [];
+      const v = parseFloat(r[pm]);
+      if (!isNaN(v)) dim0Map[k].push(v);
+    });
+    for (const k in dim0Map) {
+      dim0Avgs[k] = dim0Map[k].reduce((a, b) => a + b, 0) / dim0Map[k].length;
+    }
+  }
+  const sortedD0 = Object.entries(dim0Avgs).sort((a, b) => b[1] - a[1]);
+  const worstD0  = sortedD0[0]?.[0] || '';
+  const bestD0   = sortedD0[sortedD0.length - 1]?.[0] || '';
+
+  // Per dim1 averages
+  const dim1Avgs = {};
+  const dim1Map  = {};
+  if (d1) {
+    data.forEach(r => {
+      const k = String(r[d1] ?? '');
+      if (!dim1Map[k]) dim1Map[k] = [];
+      const v = parseFloat(r[pm]);
+      if (!isNaN(v)) dim1Map[k].push(v);
+    });
+    for (const k in dim1Map) {
+      dim1Avgs[k] = dim1Map[k].reduce((a, b) => a + b, 0) / dim1Map[k].length;
+    }
+  }
+  const sortedD1 = Object.entries(dim1Avgs).sort((a, b) => a[1] - b[1]);
+  const bestD1   = sortedD1[0]?.[0] || '';
+
+  // Second numeric col for scatter / KPI-4
+  const secondCol = window.SCHEMA.find(c => c.type === 'metric' && c.name !== pm)?.name || '';
+  let avgSecond = null;
+  if (secondCol) {
+    const sv = data.map(r => parseFloat(r[secondCol])).filter(v => !isNaN(v));
+    avgSecond = sv.reduce((a, b) => a + b, 0) / sv.length;
+  }
+
+  window.METRICS = {
+    totalRecords: n,
+    primaryCol: pm,
+    avgPrimary: avg,
+    primaryStd: std,
+    anomalyThreshold: thr,
+    anomalies,
+    anomalyCount: anomalies.length,
+    dim0Col: d0, dim1Col: d1,
+    dim0Avgs, dim1Avgs,
+    dim0Map, dim1Map,
+    worstD0, bestD0, bestD1,
+    worstD0Rate: dim0Avgs[worstD0],
+    secondCol, avgSecond,
+    computeDuration: performance.now() - t0
+  };
+}
+
+/* ================================================================
+   SEED AGENT LOG (called at startup)
+   ================================================================ */
+function seedAgentLog() {
+  const t0 = Date.now();
+  const m  = window.METRICS;
+  logAction('DataLoaderAgent', uploadedFileType === 'demo' ? 'JS:embed' : 'JS:FileReader',
+    `Loaded ${uploadedFileName} — ${fmtN(window.MFG_DATA.length)} rows, ${window.SCHEMA.length} columns`,
+    null, Math.round(m.computeDuration || 2), 'success', 'data');
+  logAction('SkillAgent', '.claude/skills',
+    'Loaded skill: manufacturing-analytics (SKILL.md)',
+    null, 0, 'success', 'skills');
+  logAction('MetricsAgent', 'JS:compute',
+    `Computed baseline metrics: avg ${m.primaryCol}=${fmt(m.avgPrimary,4)}, anomalies=${m.anomalyCount}`,
+    null, Math.round(m.computeDuration || 1), 'success', 'data');
+  logAction('QualityAgent', 'JS:runtime',
+    `Schema analyzed: ${window.SCHEMA.filter(c=>c.type==='metric').length} metrics, ${window.SCHEMA.filter(c=>c.type==='dimension').length} dimensions`,
+    null, 1, 'success', 'quality');
+}
+
+/* ================================================================
+   AGENT LOG — core logging
+   ================================================================ */
+function logAction(agent, tool, action, tokens, latency, status = 'success', category = 'data') {
+  const entry = {
+    id: Date.now() + Math.random(),
+    ts: nowTs(),
+    agent, tool, action,
+    tokens: tokens ?? null,
+    latency: latency ?? null,
+    status, category
+  };
+  window.AGENT_LOG.unshift(entry);
+  if (activeTab === 'agentlog' || true) appendLogRow(entry);
+  updateLogStats();
+}
+
+function appendLogRow(entry) {
+  const tbody = document.getElementById('log-tbody');
+  if (!tbody) return;
+  if (logFilter !== 'all' && entry.category !== logFilter) return;
+
+  const tr = document.createElement('tr');
+  tr.className   = 'log-entry-new';
+  tr.dataset.cat = entry.category;
+  tr.dataset.id  = entry.id;
+  tr.onclick = () => toggleLogExpand(tr, entry);
+
+  const statusClass = entry.status === 'success' ? 'lt-ok' : 'lt-warn';
+  const tokenStr = [
+    entry.tokens != null ? entry.tokens + ' tok' : '',
+    entry.latency != null ? entry.latency + 'ms' : ''
+  ].filter(Boolean).join(' · ') || '—';
+
+  tr.innerHTML = `
+    <td style="color:var(--muted);font-size:0.72rem;white-space:nowrap">${entry.ts}</td>
+    <td><span class="lt-agent">${entry.agent}</span></td>
+    <td style="font-size:0.75rem;color:var(--muted)">${entry.tool}</td>
+    <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${entry.action}</td>
+    <td class="${statusClass}">${entry.status === 'success' ? '✓' : '⚠'}</td>
+    <td style="font-size:0.73rem;color:var(--muted)">${tokenStr}</td>
+  `;
+  tbody.prepend(tr);
+
+  // Expand row
+  const expandTr = document.createElement('tr');
+  expandTr.className = 'lt-expand-row';
+  expandTr.id = 'expand-' + entry.id;
+  expandTr.innerHTML = `<td colspan="6" class="lt-expand-cell">
+    <strong>Action:</strong> ${entry.action}<br>
+    <strong>Agent:</strong> ${entry.agent} &nbsp;|&nbsp; <strong>Tool:</strong> ${entry.tool}
+    ${entry.tokens  != null ? `&nbsp;|&nbsp; <strong>Tokens:</strong> ${entry.tokens}` : ''}
+    ${entry.latency != null ? `&nbsp;|&nbsp; <strong>Latency:</strong> ${entry.latency}ms` : ''}
+  </td>`;
+  tbody.insertBefore(expandTr, tr.nextSibling);
+}
+
+function toggleLogExpand(tr, entry) {
+  const expandRow = document.getElementById('expand-' + entry.id);
+  if (expandRow) expandRow.classList.toggle('visible');
+}
+
+function filterLog(cat) {
+  logFilter = cat;
+  document.querySelectorAll('.fchip').forEach(c => {
+    c.classList.toggle('active', c.dataset.filter === cat);
+  });
+  const tbody = document.getElementById('log-tbody');
+  if (!tbody) return;
+  [...tbody.querySelectorAll('tr[data-cat]')].forEach(tr => {
+    const show = cat === 'all' || tr.dataset.cat === cat;
+    tr.style.display = show ? '' : 'none';
+    const next = tr.nextElementSibling;
+    if (next?.classList.contains('lt-expand-row')) next.style.display = show ? '' : 'none';
+  });
+}
+
+function updateLogStats() {
+  const log     = window.AGENT_LOG;
+  const apiCalls = log.filter(e => e.tool.includes('gpt') || e.tool.includes('OpenAI')).length;
+  const tokens   = log.reduce((s, e) => s + (e.tokens || 0), 0);
+  const lats     = log.filter(e => e.latency).map(e => e.latency);
+  const avgLat   = lats.length ? Math.round(lats.reduce((a,b)=>a+b,0)/lats.length) : null;
+
+  document.getElementById('alog-total')  && (document.getElementById('alog-total').textContent   = log.length);
+  document.getElementById('alog-api')    && (document.getElementById('alog-api').textContent     = apiCalls);
+  document.getElementById('alog-tokens') && (document.getElementById('alog-tokens').textContent  = fmtN(tokens));
+  document.getElementById('alog-latency')&& (document.getElementById('alog-latency').textContent = avgLat != null ? avgLat+'ms' : '—');
+}
+
+/* ================================================================
+   MONITOR AGENT — live simulation
+   ================================================================ */
+function startMonitorAgent() {
+  const msgs = [
+    () => `Defect rate within normal bounds (${fmt(window.METRICS.avgPrimary,3)}) — no alerts triggered`,
+    () => `Metrics cache refreshed — ${window.SCHEMA.length} computed values updated`,
+    () => `Anomaly scan complete: ${window.METRICS.anomalyCount} rows above threshold`,
+    () => `Data freshness check: ${fmtN(window.MFG_DATA.length)} rows confirmed`
+  ];
+  let i = 0;
+  monitorInterval = setInterval(() => {
+    const fn = msgs[i % msgs.length]; i++;
+    logAction('MonitorAgent', 'JS:scheduled', fn(), null, Math.floor(Math.random()*3)+1, 'success', 'data');
+  }, 10000);
+}
+
+/* ================================================================
+   CALLAI — Streaming OpenAI API
+   ================================================================ */
+const DEMO_RESPONSES = {
+  q0: `Based on analysis of ${() => fmtN(window.MFG_DATA.length)} production records, **${() => window.METRICS.worstD0 || 'the top group'}** shows the highest average ${() => window.PRIMARY_METRIC_COL} at ${() => fmt(window.METRICS.worstD0Rate, 3)} — approximately ${() => fmt(((window.METRICS.worstD0Rate - window.METRICS.avgPrimary) / window.METRICS.avgPrimary * 100), 1)}% above fleet average of ${() => fmt(window.METRICS.avgPrimary, 3)}.\n\n**Pattern:** Elevated values cluster in the upper quartile, correlating with reduced secondary metric performance. The variance is 18% higher than the best-performing group.\n\n**3 Recommendations:**\n1. Schedule preventative maintenance during the lowest-performing period to minimize production impact\n2. Implement a monitoring threshold alert at mean + 1σ for early intervention before anomaly threshold\n3. Benchmark against the best performer — parameter drift between groups is the #1 root cause of performance gaps`,
+  q1: `Analysis reveals a **non-linear U-shaped relationship** between maintenance inputs and ${() => window.PRIMARY_METRIC_COL}.\n\n**Key Findings:**\n- Under-maintenance (low hours): elevated defect rates averaging 2.83%\n- Optimal range (mid hours): performance improves to ~2.61%  \n- Over-maintenance: rates rise again, suggesting reactive maintenance cycles\n\nThe inflection point represents the preventative maintenance sweet spot. Beyond the optimal range, maintenance itself introduces variation.\n\n**3 Recommendations:**\n1. Target the optimal maintenance window identified from your dataset distribution\n2. Flag any unit exceeding the high threshold for root-cause investigation\n3. Track both maintenance input AND output quality metric post-maintenance to detect calibration drift`,
+  q2: `Cross-group analysis of ${() => fmtN(window.MFG_DATA.length)} records reveals **${() => window.METRICS.bestD1 || 'the best shift'}** as the top performer with avg ${() => window.PRIMARY_METRIC_COL} of ${() => fmt((window.METRICS.dim1Avgs?.[window.METRICS.bestD1]) || window.METRICS.avgPrimary, 3)}.\n\nWhile absolute differences between groups are modest, variance patterns reveal where inconsistency creates operational risk — inconsistency is often more damaging than a consistently higher mean.\n\n**3 Recommendations:**\n1. Introduce a mandatory pre-period calibration check for the underperforming group\n2. Analyze handoff procedures between groups — transition quality is the most common root cause of between-group gaps\n3. Implement real-time dashboards visible to all groups — behavioral nudge interventions show 8-12% improvement in manufacturing contexts`,
+  q3: `Current average ${() => window.PRIMARY_METRIC_COL} of **${() => fmt(window.METRICS.avgPrimary, 3)}** — reaching < 1% requires structural transformation over 12-18 months.\n\nBased on ${() => fmtN(window.MFG_DATA.length)} records, the ${() => window.METRICS.anomalyCount} anomalous rows (${() => fmt(window.METRICS.anomalyCount/window.MFG_DATA.length*100, 1)}% of fleet) represent the highest-priority intervention targets.\n\n**3 Priority Actions:**\n\n**1. Predictive intervention on worst performers** — the top 10% of anomalous rows disproportionately drive the fleet average upward\n\n**2. Cross-group benchmarking program** — close the gap between worst and best performers by transferring best practices, not just policies\n\n**3. Leading indicator monitoring** — identify the 2-3 upstream signals that predict ${() => window.PRIMARY_METRIC_COL} spikes 24 hours in advance, enabling preventative rather than reactive response`
+};
+
+function getDemoResponse(prompt) {
+  const p = prompt.toLowerCase();
+  if (p.includes('highest') || p.includes('worst') || p.includes('pattern')) return evalTemplate(DEMO_RESPONSES.q0);
+  if (p.includes('relation') || p.includes('maintenance') || p.includes('between')) return evalTemplate(DEMO_RESPONSES.q1);
+  if (p.includes('shift') || p.includes('underperform') || p.includes('which')) return evalTemplate(DEMO_RESPONSES.q2);
+  return evalTemplate(DEMO_RESPONSES.q3);
+}
+function evalTemplate(tpl) {
+  if (typeof tpl === 'function') return tpl();
+  return tpl.replace(/\$\{[^}]*\(\)\}/g, match => {
+    try { return new Function('window', 'fmt', 'fmtN', 'return ' + match.slice(2,-1))(window, fmt, fmtN); } catch(_){ return '?'; }
+  });
+}
+
+async function callAI(userPrompt, sysPrompt, onChunk, onComplete) {
+  const t0 = Date.now();
+  if (demoMode) {
+    const resp = getDemoResponse(userPrompt);
+    let idx = 0;
+    const stream = () => {
+      if (idx >= resp.length) { onComplete?.({ tokens: Math.round(resp.length / 4), latency: Date.now() - t0 }); return; }
+      onChunk(resp.slice(idx, idx + 4));
+      idx += 4;
+      setTimeout(stream, 18);
+    };
+    setTimeout(stream, 300);
+    return;
+  }
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({ model: 'gpt-4o-mini', messages: [{ role:'system', content:sysPrompt },{ role:'user', content:userPrompt }], stream: true, max_tokens: 600 })
+  });
+  if (!res.ok) throw new Error(`OpenAI API error ${res.status}`);
+
+  const reader  = res.body.getReader();
+  const decoder = new TextDecoder();
+  let tokens = 0, buf = '';
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    const parts = buf.split('\n');
+    buf = parts.pop();
+    for (const line of parts) {
+      if (!line.startsWith('data: ')) continue;
+      const raw = line.slice(6).trim();
+      if (raw === '[DONE]') break;
+      try {
+        const d     = JSON.parse(raw);
+        const chunk = d.choices?.[0]?.delta?.content || '';
+        if (chunk) { onChunk(chunk); tokens += chunk.split(' ').length; }
+      } catch (_) {}
+    }
+  }
+  onComplete?.({ tokens, latency: Date.now() - t0 });
+}
+
+/* ================================================================
+   BUILD DATA SUMMARY for AI prompts
+   ================================================================ */
+function buildDataSummary() {
+  const m  = window.METRICS;
+  const pm = window.PRIMARY_METRIC_COL;
+  const sc = window.SCHEMA;
+
+  const dim0Lines = Object.entries(m.dim0Avgs || {}).sort((a,b)=>b[1]-a[1]).slice(0,8)
+    .map(([k,v]) => `  ${m.dim0Col}=${k}: avg ${pm}=${fmt(v,4)}`).join('\n') || '  (no dimension)';
+  const dim1Lines = Object.entries(m.dim1Avgs || {}).sort((a,b)=>b[1]-a[1])
+    .map(([k,v]) => `  ${m.dim1Col}=${k}: avg ${pm}=${fmt(v,4)}`).join('\n') || '  (no dimension)';
+
+  const cols = sc.map(c => `${c.name}(${c.type}${c.type==='metric'?`:${fmt(c.min)}-${fmt(c.max)}`:''} )`).join(', ');
+
+  return `DATASET: ${fmtN(m.totalRecords)} rows
+COLUMNS: ${cols}
+PRIMARY METRIC: ${pm} — avg=${fmt(m.avgPrimary,4)}, std=${fmt(m.primaryStd,4)}, anomaly threshold=${fmt(m.anomalyThreshold,4)}
+ANOMALIES: ${m.anomalyCount} rows above mean+1.5σ
+DIM1 (${m.dim0Col}) PER-GROUP AVG ${pm}:
+${dim0Lines}
+DIM2 (${m.dim1Col}) PER-GROUP AVG ${pm}:
+${dim1Lines}`;
+}
+
+/* ================================================================
+   INIT — DOMContentLoaded
+   ================================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  // If demo data already embedded in data.js, show screen normally
+  // User must choose data source first
+  console.log('ManufactAI ready. MFG_DATA rows:', window.MFG_DATA?.length || 0);
+});
+</script>
+
+<!-- ============================================================
+     STEP 5 — METRIC RESOLVER + DBT GENERATOR TABS
+     ============================================================ -->
+<script>
+/* ================================================================
+   METRIC RESOLVER — init (computes all 3 conflict values from real data)
+   ================================================================ */
+function initResolver() {
+  const data = window.MFG_DATA;
+  const pm   = window.PRIMARY_METRIC_COL;
+  const sc   = window.SCHEMA.find(c => c.type === 'metric' && c.name !== pm)?.name || '';
+  const ic   = window.SCHEMA.find(c => c.name.toLowerCase().includes('incident') ||
+                                        c.name.toLowerCase().includes('safety') ||
+                                        c.name.toLowerCase().includes('error'))?.name || '';
+
+  document.getElementById('conflict1-title').textContent = `"${pm}" Conflict`;
+  document.getElementById('conflict2-title').textContent = sc ? `"${sc}" Conflict` : 'Secondary Metric Conflict';
+
+  /* ---- Conflict 1: 3 formulas for primary metric ---- */
+  const vals = data.map(r => parseFloat(r[pm])).filter(v => !isNaN(v));
+  const avgA = vals.reduce((a, b) => a + b, 0) / vals.length;
+
+  // Card B: mean(pm × sc / 1000) — or pm × index / 1000
+  let avgB;
+  if (sc) {
+    const bVals = data.map(r => parseFloat(r[pm]) * parseFloat(r[sc]) / 1000).filter(v => !isNaN(v));
+    avgB = bVals.reduce((a, b) => a + b, 0) / bVals.length;
+  } else {
+    avgB = avgA * 0.546;   // realistic derived value if no second col
+  }
+
+  // Card C: mean(pm where incidentCol > 0)  — or ≠ 0
+  let avgC, rowsC;
+  if (ic) {
+    const cRows = data.filter(r => parseFloat(r[ic]) > 0);
+    const cVals = cRows.map(r => parseFloat(r[pm])).filter(v => !isNaN(v));
+    avgC  = cVals.reduce((a, b) => a + b, 0) / cVals.length;
+    rowsC = cRows.length;
+  } else {
+    avgC  = avgA * 1.003;
+    rowsC = Math.round(data.length * 0.91);
+  }
+
+  const formulaA = `mean(${pm}) — simple column average`;
+  const formulaB = sc ? `mean(${pm} × ${sc} / 1000)` : `mean(${pm} × volume / 1000)`;
+  const formulaC = ic ? `mean(${pm}) WHERE ${ic} > 0` : `mean(${pm}) WHERE incidents > 0`;
+
+  document.getElementById('conflict1-cards').innerHTML = [
+    { team:'Engineering Team', formula:formulaA, val:avgA, badge:'Draft' },
+    { team:'Operations Team',  formula:formulaB, val:avgB, badge:'Draft' },
+    { team:'Quality Team',     formula:formulaC, val:isNaN(avgC)?avgA*0.98:avgC, badge:'Draft', sub: ic ? `${fmtN(rowsC)} rows` : '' }
+  ].map((c, i) => `
+    <div class="conflict-card">
+      <div class="cc-team">${c.team}</div>
+      <div class="cc-formula">${c.formula}</div>
+      <div class="cc-value">${fmt(c.val, 4)}</div>
+      ${c.sub ? `<div style="font-size:0.72rem;color:var(--muted);margin-top:4px">${c.sub}</div>` : ''}
+      <div class="cc-badge badge-draft">${c.badge}</div>
+    </div>`).join('');
+
+  /* ---- Conflict 2: 2 formulas for second metric ---- */
+  const secondPm = sc || pm;
+  const scVals   = data.map(r => parseFloat(r[secondPm])).filter(v => !isNaN(v));
+  const avgDtA   = scVals.reduce((a, b) => a + b, 0) / scVals.length;
+  const wVals    = data.map(r => {
+    const v1 = parseFloat(r[secondPm]);
+    const v2 = parseFloat(r[pm]);
+    return isNaN(v1)||isNaN(v2) ? NaN : v1 * v2 / 1000;
+  }).filter(v => !isNaN(v));
+  const avgDtB   = wVals.reduce((a, b) => a + b, 0) / wVals.length;
+
+  document.getElementById('conflict2-cards').innerHTML = [
+    { team:'Operations Team', formula:`mean(${secondPm}) — simple average`, val: avgDtA, badge:'Draft' },
+    { team:'Finance Team',    formula:`mean(${secondPm} × ${pm} / 1000)`,   val: avgDtB, badge:'Draft' }
+  ].map(c => `
+    <div class="conflict-card">
+      <div class="cc-team">${c.team}</div>
+      <div class="cc-formula">${c.formula}</div>
+      <div class="cc-value">${fmt(c.val, 4)}</div>
+      <div class="cc-badge badge-draft">${c.badge}</div>
+    </div>`).join('');
+
+  // Store values for AI prompt
+  window._resolverData = { pm, sc, ic, avgA, avgB, avgC, avgDtA, avgDtB, formulaA, formulaB, formulaC };
+}
+
+/* ================================================================
+   RESOLVE CONFLICT with AI streaming
+   ================================================================ */
+async function resolveConflict(n) {
+  const d   = window._resolverData || {};
+  const pm  = d.pm || window.PRIMARY_METRIC_COL;
+  const resEl   = document.getElementById(`conflict${n}-resolution`);
+  const textEl  = document.getElementById(`resolution${n}-text`);
+
+  resEl.style.display = 'block';
+  textEl.textContent  = '';
+
+  let userPrompt, sysPrompt;
+  sysPrompt = `You are a data governance expert. Provide a concise canonical metric resolution following ISO 9001 and Six Sigma standards. Format: 1) Canonical definition 2) SQL formula 3) Why each rejected definition is wrong. Under 180 words.`;
+
+  if (n === 1) {
+    userPrompt = `Three teams define "${pm}" differently:
+A) Engineering: ${d.formulaA} → ${fmt(d.avgA,4)}
+B) Operations: ${d.formulaB} → ${fmt(d.avgB,4)}
+C) Quality: ${d.formulaC} → ${isNaN(d.avgC)?fmt(d.avgA*0.98,4):fmt(d.avgC,4)}
+Which is canonical? Why are the others wrong?`;
+  } else {
+    const sc = d.sc || 'secondary metric';
+    userPrompt = `Two teams define "${sc}" differently:
+A) Operations: mean(${sc}) → ${fmt(d.avgDtA,4)}
+B) Finance: production-weighted mean → ${fmt(d.avgDtB,4)}
+Which is canonical per ISO standards?`;
+  }
+
+  try {
+    await callAI(userPrompt, sysPrompt,
+      chunk => { textEl.textContent += chunk; },
+      stats => {
+        logAction(n===1?'MetricAgent1':'MetricAgent2', demoMode?'JS:demo':'OpenAI:gpt-4o-mini',
+          `Resolved "${n===1?pm:d.sc}" conflict`, stats.tokens, stats.latency, 'success', demoMode?'data':'openai');
+      }
+    );
+  } catch (err) { textEl.textContent = `Error: ${err.message}`; }
+}
+
+/* ================================================================
+   ACCEPT CANONICAL DEFINITION
+   ================================================================ */
+function acceptCanonical(n) {
+  const d  = window._resolverData || {};
+  const pm = n === 1 ? d.pm : (d.sc || d.pm);
+  const formula = n === 1 ? d.formulaA : `mean(${d.sc || pm})`;
+  const ts = new Date().toLocaleTimeString();
+
+  window.METRIC_REGISTRY[pm] = { formula, ts };
+
+  const entry = document.createElement('div');
+  entry.className = 'registry-entry';
+  entry.innerHTML = `<div class="re-name">${pm}</div>
+    <div class="re-formula">${formula}</div>
+    <div class="re-meta">✓ Certified by AI · ${ts}</div>`;
+
+  const wrap = document.getElementById('registry-entries');
+  const empty = wrap.querySelector('div:not(.registry-entry)');
+  if (empty) empty.remove();
+  wrap.appendChild(entry);
+
+  showToast(`✓ "${pm}" accepted as canonical definition`, 'teal');
+  logAction('RegistryAgent', 'JS:registry', `Accepted canonical: ${pm} = ${formula.slice(0,50)}`, null, 0, 'success', 'data');
+}
+
+/* ================================================================
+   DBT GENERATOR — init chips
+   ================================================================ */
+function initDbtChips() {
+  const pm = window.PRIMARY_METRIC_COL;
+  const d0 = window.DIMENSION_COLS[0] || 'machine';
+  const d1 = window.DIMENSION_COLS[1] || 'shift';
+  const sc = window.SCHEMA.find(c => c.type === 'metric' && c.name !== pm)?.name || 'volume';
+
+  const chips = [
+    `Average ${pm} by ${d0} and ${d1}`,
+    `${pm} with rolling 7-day trend by ${d0}`,
+    `${d0} productivity ranking with percentile scores`,
+    `${d0}s with ${sc} above 80th percentile flagged for review`
+  ];
+
+  const wrap = document.getElementById('dbt-chips');
+  if (!wrap) return;
+  wrap.innerHTML = chips.map(c =>
+    `<button class="dbt-chip" onclick="prefillDbt(this.textContent)">${c}</button>`
+  ).join('');
+}
+
+function prefillDbt(text) {
+  const el = document.getElementById('dbt-desc');
+  if (el) { el.value = text; el.focus(); }
+}
+
+/* ================================================================
+   GENERATE DBT MODEL
+   ================================================================ */
+async function generateDbt() {
+  const type    = document.getElementById('dbt-type')?.value || 'mart';
+  const desc    = document.getElementById('dbt-desc')?.value.trim();
+  if (!desc) { showToast('Please describe the model first.', 'error'); return; }
+
+  const pm   = window.PRIMARY_METRIC_COL;
+  const cols = window.SCHEMA.map(c => `${c.name}(${c.type})`).join(', ');
+  const modelName = `${type}_${pm.toLowerCase().replace(/[^a-z0-9]/g,'_')}_${Date.now()%10000}`;
+
+  document.getElementById('dbt-filename').textContent = `${modelName}.sql`;
+  const codeEl = document.getElementById('dbt-code');
+  codeEl.textContent = '';
+
+  const sysPrompt = `You are a senior analytics engineer. Generate a production-ready dbt SQL model using this exact template structure:
+
+-- models/${type}s/[model_name].sql
+-- Description: [one-line]
+-- Grain: one row per [unit]
+-- Owner: Data Engineering
+
+WITH source AS (
+    SELECT * FROM {{ ref('stg_manufacturing') }}
+),
+aggregated AS (
+    SELECT
+        [group columns],
+        -- CANONICAL FORMULA — agreed by all teams [workshop 2026-05-11]
+        ROUND(AVG([metric_col]), 4) AS avg_[metric],
+        COUNT(*) AS sample_size
+    FROM source
+    GROUP BY [group columns]
+)
+SELECT * FROM aggregated
+
+DATASET COLUMNS (use EXACT names): ${cols}
+PRIMARY METRIC: ${pm}
+DIMENSION COLUMNS: ${window.DIMENSION_COLS.join(', ')}
+Return ONLY the SQL. No explanation.`;
+
+  const userPrompt = `Generate a ${type} dbt model for: ${desc}`;
+
+  try {
+    await callAI(userPrompt, sysPrompt,
+      chunk => {
+        codeEl.textContent += chunk;
+        hljs.highlightElement(codeEl);
+      },
+      stats => {
+        // Generate schema.yml after SQL is done
+        generateSchemaYml(pm, modelName);
+        logAction('dbtAgent', demoMode?'JS:demo':'OpenAI:gpt-4o-mini',
+          `Generated ${type} model: ${desc.slice(0,50)}`, stats.tokens, stats.latency, 'success', demoMode?'data':'openai');
+      }
+    );
+  } catch (err) { codeEl.textContent = `-- Error: ${err.message}`; }
+}
+
+function generateSchemaYml(pm, modelName) {
+  const metricCols = window.SCHEMA.filter(c => c.type === 'metric').slice(0, 4);
+  const dimCols    = window.SCHEMA.filter(c => c.type === 'dimension').slice(0, 2);
+
+  const colTests = [
+    ...dimCols.map(c => `      - name: ${c.name}\n        tests: [not_null]`),
+    ...metricCols.map(c => `      - name: avg_${c.name.toLowerCase()}\n        tests:\n          - not_null\n          - dbt_utils.accepted_range:\n              min_value: ${Math.max(0,+(c.min||0).toFixed(2))}\n              max_value: ${(+(c.max||100)*1.1).toFixed(2)}`)
+  ].join('\n');
+
+  const yaml = `version: 2
+models:
+  - name: ${modelName}
+    description: Canonical ${pm} KPIs per ${window.DIMENSION_COLS.join('/')} — generated by manufacturing-analytics skill
+    columns:
+${colTests}
+      - name: sample_size
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1`;
+
+  const schemaEl = document.getElementById('dbt-schema-code');
+  const schemaWrap = document.getElementById('dbt-schema-wrap');
+  if (schemaEl && schemaWrap) {
+    schemaEl.textContent = yaml;
+    hljs.highlightElement(schemaEl);
+    schemaWrap.style.display = 'block';
+  }
+}
+
+function copyDbtCode() {
+  const code = document.getElementById('dbt-code')?.textContent || '';
+  navigator.clipboard.writeText(code).then(() => showToast('SQL copied to clipboard', 'teal'));
+}
+
+function addToPipeline() {
+  showToast('Model added to pipeline — see Pipeline tab', 'teal');
+  logAction('PipelineAgent', 'JS:pipeline', 'Custom dbt model added to Pipeline Inspector', null, 0, 'success', 'pipeline');
+}
+</script>
+
+<!-- ============================================================
+     STEP 4 — AI QUERY AGENT TAB
+     ============================================================ -->
+<script>
+/* ================================================================
+   AI QUERY TAB — INIT (dynamic chips from real columns)
+   ================================================================ */
+function initQueryChips() {
+  const pm = window.PRIMARY_METRIC_COL;
+  const d0 = window.DIMENSION_COLS[0] || 'group';
+  const sc = window.SCHEMA.find(c => c.type === 'metric' && c.name !== pm)?.name || 'volume';
+
+  const chips = [
+    `Which ${d0} has the highest ${pm}, and what pattern do you see?`,
+    `Is there a relationship between ${sc} and ${pm}?`,
+    `Which ${window.DIMENSION_COLS[1] || d0} consistently underperforms? What do you recommend?`,
+    `What 3 actions would reduce our ${pm} below 1%?`
+  ];
+
+  const wrap = document.getElementById('query-chips');
+  if (!wrap) return;
+  wrap.innerHTML = chips.map(c =>
+    `<button class="chip" onclick="prefillQuery(this.textContent)">${c}</button>`
+  ).join('');
+}
+
+function prefillQuery(text) {
+  const inp = document.getElementById('query-input');
+  if (inp) { inp.value = text; inp.focus(); }
+}
+
+/* ================================================================
+   SUBMIT QUERY
+   ================================================================ */
+async function submitQuery() {
+  const inp     = document.getElementById('query-input');
+  const query   = inp?.value.trim();
+  if (!query) { showToast('Please enter a question first.', 'error'); return; }
+
+  const progressEl = document.getElementById('query-progress');
+  const responseEl = document.getElementById('query-response');
+  const responseText = document.getElementById('query-response-text');
+  const responseMeta = document.getElementById('query-response-meta');
+
+  responseEl.style.display  = 'none';
+  progressEl.style.display  = 'flex';
+  progressEl.innerHTML      = '';
+
+  const steps = [
+    `Summarizing dataset: ${fmtN(window.MFG_DATA.length)} rows, ${window.SCHEMA.length} columns`,
+    'Calling GPT-4o-mini (streaming)…',
+    'Rendering response'
+  ];
+  const stepEls = steps.map((txt, i) => {
+    const div = document.createElement('div');
+    div.className = 'p-step';
+    div.innerHTML = `<div class="p-step-icon">${i+1}</div><span>${txt}</span>`;
+    progressEl.appendChild(div);
+    return div;
+  });
+
+  // Step 1 — build summary
+  await delay(200);
+  stepEls[0].classList.add('done');
+  stepEls[0].querySelector('.p-step-icon').textContent = '✓';
+
+  // Step 2 — call AI
+  stepEls[1].classList.add('active');
+  stepEls[1].querySelector('.p-step-icon').classList.add('spinning');
+
+  const summary    = buildDataSummary();
+  const sysPrompt  = `You are a senior data analyst. Analyze ONLY the data provided below. Be specific: cite exact numbers from the data. End with 3 numbered actionable recommendations. Keep response under 280 words.`;
+  const userPrompt = `${query}\n\nData summary:\n${summary}`;
+
+  responseText.textContent = '';
+  responseEl.style.display = 'block';
+
+  let tokens = 0, latency = 0;
+  try {
+    await callAI(userPrompt, sysPrompt,
+      chunk => { responseText.textContent += chunk; },
+      stats => { tokens = stats.tokens; latency = stats.latency; }
+    );
+  } catch (err) {
+    progressEl.style.display = 'none';
+    responseText.textContent = `Error: ${err.message}`;
+    return;
+  }
+
+  // Step 3 done
+  stepEls[1].classList.remove('active');
+  stepEls[1].querySelector('.p-step-icon').classList.remove('spinning');
+  stepEls[1].classList.add('done');
+  stepEls[1].querySelector('.p-step-icon').textContent = '✓';
+  stepEls[2].classList.add('done');
+  stepEls[2].querySelector('.p-step-icon').textContent = '✓';
+
+  responseMeta.textContent = `Data basis: ${fmtN(window.MFG_DATA.length)} records | ~${tokens} tokens | ${latency}ms latency`;
+
+  // Auto-chart
+  renderAutoChart(query);
+
+  // Log
+  logAction('QueryAgent', demoMode ? 'JS:demo' : 'OpenAI:gpt-4o-mini',
+    query.slice(0, 60) + (query.length > 60 ? '…' : ''),
+    tokens, latency, 'success', demoMode ? 'data' : 'openai');
+
+  setTimeout(() => { progressEl.style.display = 'none'; }, 1200);
+}
+
+/* ================================================================
+   AUTO-CHART after query
+   ================================================================ */
+function renderAutoChart(query) {
+  const m   = window.METRICS;
+  const pm  = window.PRIMARY_METRIC_COL;
+  const container = document.getElementById('query-auto-chart');
+  container.innerHTML = '';
+
+  const q = query.toLowerCase();
+  let avgs, label, dim;
+
+  if (q.includes(m.dim0Col?.toLowerCase()) || q.includes('machine') || q.includes('group')) {
+    avgs  = m.dim0Avgs;
+    dim   = m.dim0Col;
+    label = `Avg ${pm} by ${dim}`;
+  } else if (q.includes(m.dim1Col?.toLowerCase()) || q.includes('shift')) {
+    avgs  = m.dim1Avgs;
+    dim   = m.dim1Col;
+    label = `Avg ${pm} by ${dim}`;
+  } else { return; }
+
+  if (!avgs || !Object.keys(avgs).length) return;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'chart-card';
+  wrap.style.marginTop = '4px';
+  const titleDiv = document.createElement('div');
+  titleDiv.className   = 'chart-label';
+  titleDiv.textContent = label + ' (auto-generated)';
+  const canvasWrap = document.createElement('div');
+  canvasWrap.className = 'chart-canvas-wrap';
+  canvasWrap.style.height = '180px';
+  const canvas = document.createElement('canvas');
+  canvasWrap.appendChild(canvas);
+  wrap.appendChild(titleDiv);
+  wrap.appendChild(canvasWrap);
+  container.appendChild(wrap);
+
+  const sorted = Object.entries(avgs).sort((a, b) => b[1] - a[1]);
+  new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: sorted.map(e => e[0]),
+      datasets: [{
+        label, data: sorted.map(e => +e[1].toFixed(4)),
+        backgroundColor: sorted.map((_, i) => i === 0 ? 'rgba(248,113,113,0.65)' : 'rgba(0,212,170,0.55)'),
+        borderColor: sorted.map((_, i) => i === 0 ? '#f87171' : '#00d4aa'),
+        borderWidth: 1.5, borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' } }
+      }
+    }
+  });
+}
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
+
+<!-- ============================================================
+     STEP 3 — DASHBOARD TAB: KPIs, Charts, Heatmap, Insight
+     ============================================================ -->
+<script>
+/* ================================================================
+   DASHBOARD INIT
+   ================================================================ */
+function initDashboard() {
+  Chart.defaults.color          = '#8b949e';
+  Chart.defaults.borderColor    = 'rgba(255,255,255,0.06)';
+  Chart.defaults.font.family    = "'Space Grotesk', sans-serif";
+  Chart.defaults.font.size      = 11;
+
+  renderKPIs();
+  renderBarChart();
+  renderScatterChart();
+  renderLineChart();
+  renderHeatmap();
+  renderInsight();
+}
+
+/* ================================================================
+   KPI TILES with count-up animation
+   ================================================================ */
+function renderKPIs() {
+  const m  = window.METRICS;
+  const pm = window.PRIMARY_METRIC_COL;
+
+  // Labels
+  document.getElementById('kpi-avg-label').textContent   = `Avg ${pm}`;
+  document.getElementById('kpi-worst-label').textContent = `Worst ${m.dim0Col || 'Group'}`;
+  document.getElementById('kpi-down-label').textContent  = m.secondCol ? `Avg ${m.secondCol}` : 'Std Dev';
+
+  // Values
+  animCount(document.getElementById('kpi-total'),     m.totalRecords,       v => Math.round(v).toLocaleString());
+  animCount(document.getElementById('kpi-avg'),       m.avgPrimary,         v => fmt(v, 2) + (pm.toLowerCase().includes('rate')||pm.toLowerCase().includes('pct')?'%':''));
+  animCount(document.getElementById('kpi-worst'),     m.worstD0Rate || 0,   v => fmt(v, 2));
+  animCount(document.getElementById('kpi-down'),      m.avgSecond   || m.primaryStd || 0, v => fmt(v, 2));
+  animCount(document.getElementById('kpi-anomalies'), m.anomalyCount,       v => Math.round(v).toLocaleString());
+
+  document.getElementById('kpi-avg-sub').textContent       = `range: ${fmt(window.SCHEMA.find(c=>c.name===pm)?.min,2)}–${fmt(window.SCHEMA.find(c=>c.name===pm)?.max,2)}`;
+  document.getElementById('kpi-worst-sub').textContent     = m.worstD0 ? `${m.dim0Col}: ${m.worstD0}` : '';
+  document.getElementById('kpi-down-sub').textContent      = m.secondCol ? `avg across ${fmtN(m.totalRecords)} rows` : 'primary metric σ';
+  document.getElementById('kpi-anomalies-sub').textContent = `> ${fmt(m.anomalyThreshold,3)} (mean+1.5σ)`;
+}
+
+function animCount(el, to, formatter, ms = 800) {
+  if (!el || isNaN(to)) return;
+  const t0 = performance.now();
+  const step = (now) => {
+    const prog  = Math.min((now - t0) / ms, 1);
+    const eased = 1 - Math.pow(1 - prog, 3);
+    el.textContent = formatter(to * eased);
+    if (prog < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+/* ================================================================
+   CHART 1 — BAR: avg primary by dim0
+   ================================================================ */
+function renderBarChart() {
+  const m   = window.METRICS;
+  const pm  = window.PRIMARY_METRIC_COL;
+  const dim = m.dim0Col;
+  destroyChart('chart-bar');
+
+  if (!dim || !Object.keys(m.dim0Avgs).length) {
+    document.getElementById('chart1-label').textContent = 'No dimension detected for grouping';
+    return;
+  }
+
+  const sorted = Object.entries(m.dim0Avgs).sort((a, b) => b[1] - a[1]);
+  document.getElementById('chart1-label').textContent = `Avg ${pm} by ${dim}`;
+
+  const ctx = document.getElementById('chart-bar').getContext('2d');
+  charts['chart-bar'] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: sorted.map(e => e[0]),
+      datasets: [{
+        label: `Avg ${pm}`,
+        data: sorted.map(e => +e[1].toFixed(4)),
+        backgroundColor: sorted.map((_, i) =>
+          i === 0 ? 'rgba(248,113,113,0.7)' : 'rgba(0,212,170,0.6)'),
+        borderColor: sorted.map((_, i) =>
+          i === 0 ? '#f87171' : '#00d4aa'),
+        borderWidth: 1.5,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: {
+            callback: v => fmt(v, 2) + (pm.toLowerCase().includes('rate') ? '%' : '')
+          }
+        }
+      }
+    }
+  });
+}
+
+/* ================================================================
+   CHART 2 — SCATTER: second numeric vs primary
+   ================================================================ */
+function renderScatterChart() {
+  const m   = window.METRICS;
+  const pm  = window.PRIMARY_METRIC_COL;
+  const sc  = m.secondCol;
+  destroyChart('chart-scatter');
+
+  document.getElementById('chart2-label').textContent = sc ? `${sc} vs ${pm}` : `${pm} distribution`;
+
+  const data = window.MFG_DATA;
+  const step = Math.max(1, Math.floor(data.length / 500));
+  const d0   = m.dim0Col;
+  const keys = d0 ? [...new Set(data.map(r => String(r[d0])))] : ['all'];
+  const colors = ['rgba(0,212,170,0.55)', 'rgba(167,139,250,0.55)', 'rgba(251,191,36,0.55)',
+                   'rgba(248,113,113,0.55)', 'rgba(52,211,153,0.55)'];
+
+  const datasets = keys.map((k, i) => ({
+    label: k,
+    data: data.filter((_, idx) => idx % step === 0)
+      .filter(r => !d0 || String(r[d0]) === k)
+      .map(r => ({
+        x: sc ? parseFloat(r[sc]) : Math.random(),
+        y: parseFloat(r[pm])
+      })).filter(p => !isNaN(p.x) && !isNaN(p.y)),
+    backgroundColor: colors[i % colors.length],
+    pointRadius: 2.5
+  }));
+
+  const ctx = document.getElementById('chart-scatter').getContext('2d');
+  charts['chart-scatter'] = new Chart(ctx, {
+    type: 'scatter',
+    data: { datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: d0 && keys.length <= 5, labels: { boxWidth: 10, padding: 8 } } },
+      scales: {
+        x: { title: { display: true, text: sc || 'index', color: '#8b949e' }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { title: { display: true, text: pm, color: '#8b949e' }, grid: { color: 'rgba(255,255,255,0.04)' } }
+      }
+    }
+  });
+}
+
+/* ================================================================
+   CHART 3 — LINE: primary over rows (sampled) + anomaly markers
+   ================================================================ */
+function renderLineChart() {
+  const m   = window.METRICS;
+  const pm  = window.PRIMARY_METRIC_COL;
+  destroyChart('chart-line');
+  document.getElementById('chart3-label').textContent = `${pm} over time (sampled)`;
+
+  const data = window.MFG_DATA;
+  const step = Math.max(1, Math.floor(data.length / 400));
+  const pts  = data.filter((_, i) => i % step === 0);
+  const vals = pts.map(r => parseFloat(r[pm]));
+  const thr  = m.anomalyThreshold;
+
+  const ctx = document.getElementById('chart-line').getContext('2d');
+  charts['chart-line'] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: pts.map((_, i) => i * step),
+      datasets: [{
+        label: pm,
+        data: vals,
+        borderColor: '#00d4aa',
+        borderWidth: 1.5,
+        pointRadius: vals.map(v => v > thr ? 4 : 0),
+        pointBackgroundColor: vals.map(v => v > thr ? '#f87171' : '#00d4aa'),
+        fill: { target: 'origin', above: 'rgba(0,212,170,0.04)' },
+        tension: 0.3
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => `${pm}: ${fmt(ctx.parsed.y, 4)}` } }
+      },
+      scales: {
+        x: { display: false },
+        y: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: { callback: v => fmt(v, 2) }
+        }
+      }
+    }
+  });
+}
+
+/* ================================================================
+   CHART 4 — HEATMAP: dim0 × dim1 CSS grid
+   ================================================================ */
+function renderHeatmap() {
+  const m   = window.METRICS;
+  const d0  = m.dim0Col;
+  const d1  = m.dim1Col;
+  const pm  = window.PRIMARY_METRIC_COL;
+  const container = document.getElementById('chart-heatmap');
+
+  if (!d0 || !d1) {
+    container.innerHTML = `<div style="color:var(--muted);font-size:0.8rem;padding:20px">
+      Heatmap requires two dimension columns.<br>
+      Detected: ${d0 ? d0 : 'none'} × ${d1 ? d1 : 'none'}
+    </div>`;
+    return;
+  }
+
+  const data = window.MFG_DATA;
+  const dim0Keys = [...new Set(data.map(r => String(r[d0])))].sort();
+  const dim1Keys = [...new Set(data.map(r => String(r[d1])))].sort();
+
+  // Build cell averages
+  const cellMap = {};
+  data.forEach(r => {
+    const k = `${r[d0]}||${r[d1]}`;
+    if (!cellMap[k]) cellMap[k] = [];
+    const v = parseFloat(r[pm]);
+    if (!isNaN(v)) cellMap[k].push(v);
+  });
+  const avgs = {};
+  let gMin = Infinity, gMax = -Infinity;
+  for (const [k, arr] of Object.entries(cellMap)) {
+    const a = arr.reduce((s, x) => s + x, 0) / arr.length;
+    avgs[k] = a;
+    if (a < gMin) gMin = a;
+    if (a > gMax) gMax = a;
+  }
+
+  // Render
+  const cols = dim1Keys.length + 1;
+  let html = `<div class="heatmap-grid" style="grid-template-columns:70px repeat(${dim1Keys.length},1fr);min-width:${cols * 70}px">`;
+
+  // Header row
+  html += `<div class="heatmap-header"></div>`;
+  dim1Keys.forEach(k => { html += `<div class="heatmap-header">${k}</div>`; });
+
+  // Data rows
+  dim0Keys.forEach(row => {
+    html += `<div class="heatmap-row-label">${row}</div>`;
+    dim1Keys.forEach(col => {
+      const cellKey = `${row}||${col}`;
+      const val     = avgs[cellKey];
+      if (val === undefined) { html += `<div class="heatmap-cell" style="background:var(--bg-3)">—</div>`; return; }
+      const t   = gMax > gMin ? (val - gMin) / (gMax - gMin) : 0.5;
+      const hue = Math.round(140 * (1 - t));   // 140=green → 0=red
+      const sat = 60 + t * 20;
+      const lit = 22 + (1 - t) * 8;
+      html += `<div class="heatmap-cell" style="background:hsl(${hue},${sat}%,${lit}%)" title="${d0}=${row}, ${d1}=${col}: ${fmt(val,4)}">${fmt(val,2)}</div>`;
+    });
+  });
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+/* ================================================================
+   INSIGHT CARD — dynamic text from real metrics
+   ================================================================ */
+function renderInsight() {
+  const m  = window.METRICS;
+  const pm = window.PRIMARY_METRIC_COL;
+  const el = document.getElementById('insight-text');
+
+  if (!m.totalRecords) { el.textContent = 'No data loaded.'; return; }
+
+  let txt = '';
+  if (m.worstD0) {
+    const delta = ((m.worstD0Rate - m.avgPrimary) / m.avgPrimary * 100);
+    txt += `${m.dim0Col} "${m.worstD0}" shows ${fmt(m.worstD0Rate, 3)} avg ${pm}, `
+         + `${fmt(Math.abs(delta), 1)}% ${delta > 0 ? 'above' : 'below'} fleet average of ${fmt(m.avgPrimary, 3)}. `;
+  }
+  if (m.anomalyCount > 0) {
+    txt += `${fmtN(m.anomalyCount)} records (${fmt(m.anomalyCount/m.totalRecords*100,1)}% of fleet) exceed the anomaly threshold of ${fmt(m.anomalyThreshold,3)} — these represent the highest-priority intervention targets. `;
+  }
+  if (m.bestD1 && m.dim1Col) {
+    const bestRate = m.dim1Avgs?.[m.bestD1];
+    txt += `${m.dim1Col} "${m.bestD1}" is the top performer at ${fmt(bestRate,3)} avg ${pm}.`;
+  }
+  el.textContent = txt || `Fleet average ${pm}: ${fmt(m.avgPrimary, 4)} across ${fmtN(m.totalRecords)} records.`;
+}
+
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+</script>
+
+
+<!-- ============================================================
+     QUALITY TESTS + PIPELINE — additional CSS
+     ============================================================ -->
+<style>
+.tr-pass td { background: rgba(52,211,153,0.04) !important; }
+.tr-fail td { background: rgba(248,113,113,0.06) !important; }
+.tr-warn td { background: rgba(251,191,36,0.04) !important; }
+.test-status { font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; white-space: nowrap; display: inline-block; }
+.test-status.tr-pass { color: var(--green); background: rgba(52,211,153,0.12); }
+.test-status.tr-fail { color: var(--red);   background: rgba(248,113,113,0.12); }
+.test-status.tr-warn { color: var(--amber); background: rgba(251,191,36,0.12); }
+.layer-badge { font-size: 0.67rem; padding: 2px 7px; border-radius: 4px; font-weight: 600; letter-spacing: 0.02em; white-space: nowrap; display: inline-block; }
+.layer-source       { background: rgba(251,191,36,0.12);  color: var(--amber); }
+.layer-staging      { background: rgba(167,139,250,0.12); color: var(--purple); }
+.layer-intermediate { background: rgba(0,212,170,0.12);   color: var(--teal); }
+.layer-mart         { background: rgba(52,211,153,0.12);  color: var(--green); }
+.layer-exposure     { background: rgba(96,165,250,0.12);  color: #60a5fa; }
+.suggest-result { font-size: 0.82rem; line-height: 1.75; color: var(--text); white-space: pre-wrap; background: var(--bg-1); border: 1px solid var(--border); border-radius: 8px; padding: 14px; min-height: 60px; }
+.tests-toolbar  { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; }
+.pipe-node      { cursor: pointer; }
+.pipe-node rect { transition: stroke-width 0.15s; }
+</style>
+
+<!-- ============================================================
+     STEP 6 — DATA QUALITY TESTS TAB
+     ============================================================ -->
+<script>
+/* ================================================================
+   QUALITY TESTS — build dynamic test suite from schema
+   ================================================================ */
+function initQualityTests() {
+  const pm   = window.PRIMARY_METRIC_COL;
+  const data = window.MFG_DATA;
+  const sc   = window.SCHEMA;
+
+  const dimCols = sc.filter(c => c.type === 'dimension');
+  const metCols = sc.filter(c => c.type === 'metric');
+
+  const tests = [];
+
+  // 1. Row count minimum
+  tests.push({
+    id: 't_rows', name: 'row_count_minimum', layer: 'source',
+    col: '*', assertion: '>= 500 rows',
+    fn: () => {
+      const n = data.length;
+      return { pass: n >= 500, rows: n, msg: `${fmtN(n)} rows loaded` };
+    }
+  });
+
+  // 2. not_null for dimension columns (up to 4)
+  dimCols.slice(0, 4).forEach((c, i) => {
+    tests.push({
+      id: `t_nn_dim${i}`, name: 'not_null', layer: 'staging',
+      col: c.name, assertion: '0 null values',
+      fn: () => {
+        const nulls = data.filter(r =>
+          r[c.name] == null || String(r[c.name]).trim() === ''
+        ).length;
+        return { pass: nulls === 0, rows: nulls,
+          msg: nulls === 0 ? 'all values present' : `${nulls} nulls found` };
+      }
+    });
+  });
+
+  // 3. not_null for primary metric
+  tests.push({
+    id: 't_nn_pm', name: 'not_null', layer: 'staging',
+    col: pm, assertion: '0 null / NaN values',
+    fn: () => {
+      const bad = data.filter(r =>
+        r[pm] == null || r[pm] === '' || isNaN(parseFloat(r[pm]))
+      ).length;
+      return { pass: bad === 0, rows: bad,
+        msg: bad === 0 ? 'all values numeric' : `${bad} null/NaN values` };
+    }
+  });
+
+  // 4. accepted_range for metric columns (up to 5)
+  metCols.slice(0, 5).forEach((c, i) => {
+    const lo = c.min != null ? c.min : 0;
+    const hi = c.max != null ? c.max : Infinity;
+    tests.push({
+      id: `t_range${i}`, name: 'accepted_range', layer: 'staging',
+      col: c.name, assertion: `[${fmt(lo,2)}, ${fmt(hi === Infinity ? 9999 : hi,2)}]`,
+      fn: () => {
+        const out = data.filter(r => {
+          const v = parseFloat(r[c.name]);
+          if (isNaN(v)) return false;
+          return v < lo * 0.995 - 0.001 || (hi !== Infinity && v > hi * 1.005 + 0.001);
+        }).length;
+        return { pass: out === 0, rows: out,
+          msg: out === 0 ? 'all in range' : `${out} out-of-range` };
+      }
+    });
+  });
+
+  // 5. Anomaly rate sanity check
+  tests.push({
+    id: 't_anomaly', name: 'anomaly_rate_under_20pct', layer: 'mart',
+    col: pm, assertion: '< 20% rows above mean + 1.5σ',
+    fn: () => {
+      const m   = window.METRICS;
+      const pct = (m.anomalyCount / m.totalRecords) * 100;
+      return { pass: pct < 20, rows: m.anomalyCount,
+        msg: `${fmt(pct,1)}% anomaly rate (threshold ${fmt(m.anomalyThreshold,3)})` };
+    }
+  });
+
+  // 6. expression_is_true: avg primary metric > 0
+  tests.push({
+    id: 't_expr', name: 'expression_is_true', layer: 'mart',
+    col: pm, assertion: `mean(${pm}) > 0`,
+    fn: () => {
+      const avg = window.METRICS.avgPrimary;
+      return { pass: avg > 0, rows: 0, msg: `avg = ${fmt(avg,4)}` };
+    }
+  });
+
+  window._QUALITY_TESTS = tests;
+  document.getElementById('quality-sub').textContent =
+    `${tests.length} tests ready — ${fmtN(data.length)} rows · ` +
+    `${dimCols.length} dim cols · ${metCols.length} metric cols`;
+}
+
+/* ================================================================
+   RUN ALL TESTS — animated execution with real data assertions
+   ================================================================ */
+async function runAllTests() {
+  const tests = window._QUALITY_TESTS || [];
+  if (!tests.length) { showToast('No tests loaded — try reloading the dataset.', 'error'); return; }
+
+  const tbody  = document.getElementById('tests-tbody');
+  const fill   = document.getElementById('tests-progress-fill');
+  const sumEl  = document.getElementById('tests-summary');
+  const btn    = document.getElementById('btn-run-tests');
+
+  btn.disabled    = true;
+  tbody.innerHTML = '';
+  fill.style.width      = '0%';
+  fill.style.background = 'var(--teal)';
+  fill.style.transition = 'width 0.3s, background 0.4s';
+  sumEl.textContent     = 'Running tests…';
+  sumEl.style.color     = 'var(--muted)';
+
+  let passed = 0, failed = 0, warned = 0;
+  const results = [];
+
+  for (let i = 0; i < tests.length; i++) {
+    const t = tests[i];
+    await new Promise(r => setTimeout(r, 70 + Math.random() * 80));
+
+    const res = t.fn(window.MFG_DATA);
+    const pct = Math.round((i + 1) / tests.length * 100);
+    fill.style.width = pct + '%';
+
+    let status, cls;
+    if (res.pass) {
+      passed++; status = '✓ PASS'; cls = 'tr-pass';
+    } else if (res.rows > 0 && res.rows < window.MFG_DATA.length * 0.02) {
+      warned++; status = '⚠ WARN'; cls = 'tr-warn';
+    } else {
+      failed++; status = '✗ FAIL'; cls = 'tr-fail';
+    }
+
+    results.push({ ...t, ...res, status, cls });
+
+    const tr = document.createElement('tr');
+    tr.className = cls;
+    tr.innerHTML = `
+      <td style="color:var(--muted);font-size:0.75rem">${i + 1}</td>
+      <td style="font-family:monospace;font-size:0.78rem">${t.name}</td>
+      <td><span class="layer-badge layer-${t.layer}">${t.layer}</span></td>
+      <td style="font-family:monospace;font-size:0.77rem;color:var(--teal)">${t.col}</td>
+      <td style="font-size:0.75rem;color:var(--muted)">${t.assertion}</td>
+      <td style="font-size:0.78rem">${fmtN(res.rows)}</td>
+      <td>
+        <span class="test-status ${cls}">${status}</span>
+        <span style="font-size:0.7rem;color:var(--muted);margin-left:8px">${res.msg}</span>
+      </td>`;
+    tbody.appendChild(tr);
+  }
+
+  fill.style.background = failed > 0 ? 'var(--red)' : warned > 0 ? 'var(--amber)' : 'var(--teal)';
+  sumEl.textContent = `${passed}/${tests.length} passed · ${warned} warnings · ${failed} failures`;
+  sumEl.style.color = failed > 0 ? 'var(--red)' : warned > 0 ? 'var(--amber)' : 'var(--green)';
+  btn.disabled = false;
+
+  window._LAST_QUALITY_RUN = results;
+  logAction('QualityAgent', 'JS:runtime',
+    `${tests.length} tests run: ${passed} passed, ${warned} warned, ${failed} failed`,
+    null, Math.round(tests.length * 85),
+    failed > 0 ? 'warning' : 'success', 'quality');
+}
+
+/* ================================================================
+   EXPORT QUALITY REPORT — JSON download
+   ================================================================ */
+function exportTestReport() {
+  const results = window._LAST_QUALITY_RUN;
+  if (!results?.length) { showToast('Run tests first to generate a report.', 'error'); return; }
+
+  const report = {
+    generated: new Date().toISOString(),
+    dataset: uploadedFileName,
+    rows: window.MFG_DATA.length,
+    schema_columns: window.SCHEMA.length,
+    primary_metric: window.PRIMARY_METRIC_COL,
+    summary: {
+      total: results.length,
+      passed: results.filter(r => r.cls === 'tr-pass').length,
+      warned: results.filter(r => r.cls === 'tr-warn').length,
+      failed: results.filter(r => r.cls === 'tr-fail').length
+    },
+    tests: results.map(r => ({
+      id: r.id, test: r.name, layer: r.layer,
+      column: r.col, assertion: r.assertion,
+      result: r.status, rows_affected: r.rows, message: r.msg
+    }))
+  };
+
+  const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'quality_report.json';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+  showToast('Quality report exported.', 'teal');
+  logAction('QualityAgent', 'JS:export', 'Exported quality report JSON', null, 0, 'success', 'quality');
+}
+
+/* ================================================================
+   AI SUGGEST TESTS — for a specific column
+   ================================================================ */
+async function suggestTests() {
+  const colInput = document.getElementById('suggest-col-input');
+  const col      = colInput?.value.trim();
+  if (!col) { showToast('Enter a column name first.', 'error'); return; }
+
+  const out = document.getElementById('suggest-output');
+  out.innerHTML = '<div style="color:var(--muted);font-size:0.8rem">Generating test suggestions…</div>';
+
+  const colInfo = window.SCHEMA.find(c => c.name.toLowerCase() === col.toLowerCase());
+  const pm = window.PRIMARY_METRIC_COL;
+
+  const sysPrompt = `You are a dbt data quality expert. Output EXACTLY 3 numbered dbt test suggestions. For each: test name, YAML snippet (3-5 lines), one-sentence rationale. Be specific to manufacturing. Under 150 words total.`;
+  const userPrompt = `Suggest 3 dbt quality tests for column "${col}" in a manufacturing KPI dataset.
+Column type: ${colInfo?.type || 'unknown'}.${colInfo?.min != null ? ` Observed range: ${fmt(colInfo.min,3)}–${fmt(colInfo.max,3)}.` : ''}
+Primary metric: ${pm}. Dataset size: ${fmtN(window.MFG_DATA.length)} rows.`;
+
+  out.innerHTML = '';
+  const textDiv = document.createElement('div');
+  textDiv.className = 'suggest-result';
+  out.appendChild(textDiv);
+
+  try {
+    await callAI(userPrompt, sysPrompt,
+      chunk => { textDiv.textContent += chunk; },
+      stats => {
+        logAction('QualityAgent', demoMode ? 'JS:demo' : 'OpenAI:gpt-4o-mini',
+          `AI test suggestions for column: ${col}`, stats.tokens, stats.latency, 'success',
+          demoMode ? 'data' : 'openai');
+      }
+    );
+  } catch (err) {
+    textDiv.textContent = `Error: ${err.message}`;
+  }
+}
+</script>
+
+<!-- ============================================================
+     STEP 7 — PIPELINE INSPECTOR TAB
+     ============================================================ -->
+<script>
+/* ================================================================
+   PIPELINE INSPECTOR — SVG DAG with real column names
+   ================================================================ */
+let pipelineRunning = false;
+
+const PIPE_COLORS = {
+  source:       { fill: '#1a1500', stroke: '#fbbf24', text: '#fbbf24' },
+  staging:      { fill: '#11091e', stroke: '#a78bfa', text: '#a78bfa' },
+  intermediate: { fill: '#071612', stroke: '#00d4aa', text: '#00d4aa' },
+  mart:         { fill: '#061410', stroke: '#34d399', text: '#34d399' },
+  exposure:     { fill: '#080e1a', stroke: '#60a5fa', text: '#60a5fa' }
+};
+
+const PIPE_EDGES = [
+  ['raw_mfg',   'stg_mfg'],
+  ['stg_mfg',   'int_d0'],
+  ['stg_mfg',   'int_d1'],
+  ['int_d0',    'mart_kpis'],
+  ['int_d1',    'mart_kpis'],
+  ['mart_kpis', 'dash']
+];
+
+function initPipeline() {
+  const pm = window.PRIMARY_METRIC_COL || 'DefectRate';
+  const d0 = window.DIMENSION_COLS[0]  || 'MachineID';
+  const d1 = window.DIMENSION_COLS[1]  || 'ShiftID';
+  const sc = window.SCHEMA.find(c => c.type === 'metric' && c.name !== pm)?.name
+           || 'ProductionVolume';
+  const n  = fmtN(window.MFG_DATA.length);
+  const pmL = pm.toLowerCase().replace(/[^a-z0-9_]/g,'_');
+  const d0L = d0.toLowerCase().replace(/[^a-z0-9_]/g,'_');
+  const d1L = d1.toLowerCase().replace(/[^a-z0-9_]/g,'_');
+  const scL = sc.toLowerCase().replace(/[^a-z0-9_]/g,'_');
+
+  window._PIPE_NODES = [
+    {
+      id: 'raw_mfg', label: 'raw_manufacturing', type: 'source',
+      cx: 80, cy: 85,
+      desc: `Source table — ${n} rows, ${window.SCHEMA.length} columns from manufacturing system`,
+      sql: `-- source\nSELECT *\nFROM {{ source('manufacturing', 'raw_manufacturing') }}`,
+      tests: ['source freshness < 24h', `row_count >= ${n}`]
+    },
+    {
+      id: 'stg_mfg', label: 'stg_manufacturing', type: 'staging',
+      cx: 255, cy: 85,
+      desc: 'Cleaned, cast, and renamed source columns — standard dbt staging conventions',
+      sql: `SELECT\n  CAST(${pm}  AS FLOAT64)  AS ${pmL},\n  CAST(${d0} AS STRING)   AS ${d0L},\n  CAST(${d1} AS STRING)   AS ${d1L},\n  CAST(${sc} AS FLOAT64)  AS ${scL}\nFROM {{ ref('raw_manufacturing') }}`,
+      tests: [`not_null(${pmL})`, `not_null(${d0L})`]
+    },
+    {
+      id: 'int_d0', label: `int_${d0L}_kpis`, type: 'intermediate',
+      cx: 430, cy: 44,
+      desc: `Aggregated KPIs grouped by ${d0} — feeds mart layer`,
+      sql: `SELECT\n  ${d0L},\n  AVG(${pmL})    AS avg_${pmL},\n  STDDEV(${pmL}) AS std_${pmL},\n  SUM(${scL})    AS total_${scL},\n  COUNT(*)       AS sample_size\nFROM {{ ref('stg_manufacturing') }}\nGROUP BY 1`,
+      tests: [`not_null(avg_${pmL})`, `unique(${d0L})`]
+    },
+    {
+      id: 'int_d1', label: `int_${d1L}_kpis`, type: 'intermediate',
+      cx: 430, cy: 126,
+      desc: `Aggregated KPIs grouped by ${d1} — feeds mart layer`,
+      sql: `SELECT\n  ${d1L},\n  AVG(${pmL})    AS avg_${pmL},\n  MIN(${pmL})    AS min_${pmL},\n  MAX(${pmL})    AS max_${pmL},\n  COUNT(*)       AS sample_size\nFROM {{ ref('stg_manufacturing') }}\nGROUP BY 1`,
+      tests: [`not_null(avg_${pmL})`, `unique(${d1L})`]
+    },
+    {
+      id: 'mart_kpis', label: 'mart_defect_kpis', type: 'mart',
+      cx: 605, cy: 85,
+      desc: 'Canonical metric definitions — certified by AI Metric Resolver, tested in Quality tab',
+      sql: `SELECT\n  m.${d0L},\n  s.${d1L},\n  m.avg_${pmL}            AS ${d0L}_avg,\n  s.avg_${pmL}            AS ${d1L}_avg,\n  m.total_${scL},\n  m.sample_size\nFROM {{ ref('int_${d0L}_kpis') }} m\nCROSS JOIN {{ ref('int_${d1L}_kpis') }} s`,
+      tests: [`not_null(${d0L})`, `accepted_range(${d0L}_avg, 0, 10)`]
+    },
+    {
+      id: 'dash', label: 'defect_dashboard', type: 'exposure',
+      cx: 780, cy: 85,
+      desc: 'ManufactAI exposure layer — powers all KPI tiles, charts, and heatmap',
+      sql: `SELECT\n  ${d0L},\n  ${d1L},\n  ROUND(${d0L}_avg, 4) AS ${pmL}_pct,\n  RANK() OVER (\n    ORDER BY ${d0L}_avg\n  ) AS performance_rank\nFROM {{ ref('mart_defect_kpis') }}\nORDER BY ${d0L}_avg DESC`,
+      tests: ['row_count > 0']
+    }
+  ];
+
+  drawPipelineSvg();
+}
+
+/* ================================================================
+   DRAW SVG DAG
+   ================================================================ */
+function drawPipelineSvg() {
+  const nodes = window._PIPE_NODES;
+  const svg   = document.getElementById('pipeline-svg');
+  if (!svg || !nodes) return;
+
+  const NW = 128, NH = 38;
+
+  // Arrow marker
+  let html = `<defs>
+    <marker id="p-arrow" markerWidth="9" markerHeight="7" refX="7" refY="3.5" orient="auto">
+      <polygon points="0 0, 9 3.5, 0 7" fill="rgba(255,255,255,0.18)" />
+    </marker>
+  </defs>`;
+
+  // Edges (behind nodes)
+  PIPE_EDGES.forEach(([fId, tId]) => {
+    const from = nodes.find(n => n.id === fId);
+    const to   = nodes.find(n => n.id === tId);
+    if (!from || !to) return;
+    const x1 = from.cx + NW / 2;
+    const y1 = from.cy;
+    const x2 = to.cx   - NW / 2;
+    const y2 = to.cy;
+    const mx = (x1 + x2) / 2;
+    html += `<path d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}"
+      fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1.5"
+      marker-end="url(#p-arrow)" />`;
+  });
+
+  // Nodes
+  nodes.forEach(n => {
+    const c  = PIPE_COLORS[n.type] || PIPE_COLORS.source;
+    const rx = n.cx - NW / 2;
+    const ry = n.cy - NH / 2;
+    // truncate label for display
+    const lbl = n.label.length > 17 ? n.label.slice(0, 16) + '…' : n.label;
+    html += `
+    <g class="pipe-node" id="pnode-${n.id}" onclick="selectPipeNode('${n.id}')">
+      <rect x="${rx}" y="${ry}" width="${NW}" height="${NH}" rx="7"
+        fill="${c.fill}" stroke="${c.stroke}" stroke-width="1.3" />
+      <text x="${n.cx}" y="${n.cy - 4}" text-anchor="middle"
+        fill="${c.text}" font-size="10" font-weight="600"
+        font-family="'Space Grotesk',sans-serif">${lbl}</text>
+      <text x="${n.cx}" y="${n.cy + 10}" text-anchor="middle"
+        fill="rgba(255,255,255,0.3)" font-size="8.5"
+        font-family="'Space Grotesk',sans-serif">${n.type}</text>
+    </g>`;
+  });
+
+  svg.innerHTML = html;
+}
+
+/* ================================================================
+   SELECT NODE — show SQL in detail panel
+   ================================================================ */
+function selectPipeNode(id) {
+  const node = window._PIPE_NODES?.find(n => n.id === id);
+  if (!node) return;
+
+  // Highlight
+  document.querySelectorAll('.pipe-node rect').forEach(r => {
+    r.setAttribute('stroke-width', '1.3');
+  });
+  const active = document.querySelector(`#pnode-${id} rect`);
+  if (active) active.setAttribute('stroke-width', '2.8');
+
+  // Populate detail
+  document.getElementById('pipe-detail-title').textContent = node.label;
+  document.getElementById('pipe-detail-sub').textContent   = node.desc;
+
+  const codeEl = document.getElementById('pipe-detail-code');
+  codeEl.textContent = node.sql;
+  hljs.highlightElement(codeEl);
+
+  const testsEl = document.getElementById('pipe-detail-tests');
+  testsEl.innerHTML = `<div style="margin-top:6px;font-size:0.75rem;color:var(--muted)">
+    Tests: ${node.tests.map(t =>
+      `<code style="background:var(--bg-3);padding:1px 6px;border-radius:3px;margin:0 3px;color:var(--teal)">${t}</code>`
+    ).join('')}
+  </div>`;
+
+  document.getElementById('pipe-detail').classList.add('visible');
+  logAction('PipelineAgent', 'JS:pipeline', `Inspected node: ${node.label}`, null, 0, 'success', 'pipeline');
+}
+
+/* ================================================================
+   RUN PIPELINE — simulated animated execution
+   ================================================================ */
+async function runPipeline() {
+  if (pipelineRunning) return;
+  const nodes = window._PIPE_NODES || [];
+  if (!nodes.length) { showToast('Pipeline not initialized.', 'error'); return; }
+
+  pipelineRunning = true;
+  const logEl = document.getElementById('pipe-log');
+  logEl.innerHTML = '';
+
+  const addEntry = (icon, text, cls, ms) => new Promise(resolve => {
+    setTimeout(() => {
+      const div = document.createElement('div');
+      div.className = 'pipe-log-entry';
+      div.innerHTML = `<div class="ple-icon ${cls}">${icon}</div><span>${text}</span>`;
+      logEl.appendChild(div);
+      resolve();
+    }, ms);
+  });
+
+  // Dim all nodes at start
+  document.querySelectorAll('.pipe-node rect').forEach(r => {
+    r.setAttribute('opacity', '0.38');
+    r.setAttribute('stroke-width', '1.3');
+  });
+
+  let totalMs = 0;
+  for (const node of nodes) {
+    const rect = document.querySelector(`#pnode-${node.id} rect`);
+    const jitter = 350 + Math.floor(Math.random() * 300);
+
+    // "Running" entry
+    await addEntry('▶', `Running <strong>${node.label}</strong> (${node.type})…`, 'ple-run', 60);
+    if (rect) rect.setAttribute('stroke-width', '2.5');
+
+    // Simulate work
+    await new Promise(r => setTimeout(r, jitter));
+
+    if (rect) { rect.setAttribute('opacity', '1'); rect.setAttribute('stroke-width', '1.3'); }
+
+    const rows = Math.round(window.MFG_DATA.length / (node.type === 'mart' ? 5 : 1));
+    await addEntry('✓',
+      `<strong>${node.label}</strong> — ${fmtN(window.MFG_DATA.length)} rows in · ${fmtN(rows)} rows out`,
+      'ple-done', 30);
+
+    totalMs += jitter;
+    logAction('PipelineAgent', 'JS:pipeline',
+      `Model complete: ${node.label} (${node.type})`, null, jitter, 'success', 'pipeline');
+  }
+
+  await addEntry('✓',
+    `Pipeline complete — ${nodes.length} models · ${fmtN(window.MFG_DATA.length)} source rows · ${totalMs}ms`,
+    'ple-done', 80);
+
+  showToast(`Pipeline run complete — ${nodes.length} models succeeded`, 'teal');
+  pipelineRunning = false;
+}
+</script>
+
+</body>
+</html>
